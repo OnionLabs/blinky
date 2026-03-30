@@ -1,8 +1,14 @@
 # Blinky - a MicroPython IDE
 
-<img src="media/screenshots/getting-started.png" alt="Getting started" width="800">
+[![CI](https://github.com/OnionLabs/blinky/actions/workflows/ci.yml/badge.svg)](https://github.com/OnionLabs/blinky/actions/workflows/ci.yml)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/todo.todo?label=marketplace)](https://marketplace.visualstudio.com/items?itemName=todo.todo)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/todo.todo)](https://marketplace.visualstudio.com/items?itemName=todo.todo)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
 
 A VS Code extension that makes MicroPython development as easy as blinking an LED. Connect your board, write code, and run it - all from the editor.
+
+<img src="media/screenshots/getting-started.png" alt="Getting started" width="800">
 
 ## Features
 
