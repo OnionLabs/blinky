@@ -5,12 +5,13 @@ import * as path from 'path';
 /**
  * Supported target platform keys for bundled espflash binaries.
  */
-type PlatformKey = 'darwin-arm64' | 'linux-x64' | 'win32-x64';
+type PlatformKey = 'darwin-arm64' | 'linux-x64' | 'linux-arm64' | 'win32-x64';
 
 /** Map of Node.js platform+arch to our binary folder names */
 const PLATFORM_MAP: Record<string, PlatformKey | undefined> = {
   'darwin-arm64': 'darwin-arm64',
   'linux-x64': 'linux-x64',
+  'linux-arm64': 'linux-arm64',
   'win32-x64': 'win32-x64',
 };
 
