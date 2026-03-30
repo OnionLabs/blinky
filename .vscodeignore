@@ -1,0 +1,14 @@
+src/
+test/
+.github/
+.vscode/
+.vscode-test/
+.husky/
+coverage/
+node_modules/
+*.vsix
+tsconfig.json
+eslint.config.mjs
+vitest.config.ts
+.gitignore
+PLAN.md

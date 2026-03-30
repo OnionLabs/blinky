@@ -1,0 +1,534 @@
+{
+  "name": "blinky",
+  "displayName": "Blinky — MicroPython IDE",
+  "description": "MicroPython IDE for VS Code - REPL, file management, run scripts, and flash firmware for ESP32",
+  "version": "0.1.0",
+  "publisher": "blinky",
+  "license": "AGPL-3.0",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "micropython",
+    "esp32",
+    "embedded",
+    "iot",
+    "serial",
+    "repl"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "blinky.connect",
+        "title": "Connect to Board",
+        "category": "blinky"
+      },
+      {
+        "command": "blinky.disconnect",
+        "title": "Disconnect from Board",
+        "category": "blinky",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.selectPort",
+        "title": "Select Serial Port",
+        "category": "blinky"
+      },
+      {
+        "command": "blinky.openRepl",
+        "title": "Open REPL Terminal",
+        "category": "blinky",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.uploadFile",
+        "title": "Upload File to Board",
+        "category": "blinky",
+        "icon": "$(cloud-upload)",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.downloadFile",
+        "title": "Download File from Board",
+        "category": "blinky",
+        "icon": "$(cloud-download)",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.deleteEntry",
+        "title": "Delete",
+        "category": "blinky",
+        "icon": "$(trash)",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.renameEntry",
+        "title": "Rename",
+        "category": "blinky",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.newFolder",
+        "title": "New Folder",
+        "category": "blinky",
+        "icon": "$(new-folder)",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.newFile",
+        "title": "New File",
+        "category": "blinky",
+        "icon": "$(new-file)",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.previewFile",
+        "title": "Preview File",
+        "category": "blinky",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.refreshFiles",
+        "title": "Refresh",
+        "category": "blinky",
+        "icon": "$(refresh)",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.runFile",
+        "title": "Run File on Board",
+        "category": "blinky",
+        "icon": "$(play)",
+        "enablement": "blinky.connected && editorLangId == python"
+      },
+      {
+        "command": "blinky.runSelection",
+        "title": "Run Selection on Board",
+        "category": "blinky",
+        "enablement": "blinky.connected && editorLangId == python"
+      },
+      {
+        "command": "blinky.stopScript",
+        "title": "Stop Running Script",
+        "category": "blinky",
+        "icon": "$(debug-stop)",
+        "enablement": "blinky.connected"
+      },
+      {
+        "command": "blinky.syncProject",
+        "title": "Sync Project to Board",
+        "category": "blinky",
+        "icon": "$(sync)",
+        "enablement": "blinky.connected && workspaceFolderCount != 0"
+      },
+      {
+        "command": "blinky.flashFirmware",
+        "title": "Flash Firmware to Board",
+        "category": "blinky",
+        "icon": "$(zap)"
+      },
+      {
+        "command": "blinky.eraseFirmware",
+        "title": "Erase Board Flash",
+        "category": "blinky"
+      },
+      {
+        "command": "blinky.installMicroPython",
+        "title": "Install MicroPython",
+        "category": "blinky",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "blinky.setupStubs",
+        "title": "Set Up MicroPython Stubs",
+        "category": "blinky"
+      },
+      {
+        "command": "blinky.openWalkthrough",
+        "title": "Open Getting Started Guide",
+        "category": "blinky",
+        "icon": "$(book)"
+      },
+      {
+        "command": "blinky.newProject",
+        "title": "New MicroPython Project",
+        "category": "blinky",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "blinky.newNotebook",
+        "title": "New REPL Notebook",
+        "category": "blinky",
+        "icon": "$(notebook)"
+      },
+      {
+        "command": "blinky.enableAutoSync",
+        "title": "Enable Auto-Sync",
+        "category": "blinky",
+        "icon": "$(sync-ignored)"
+      },
+      {
+        "command": "blinky.disableAutoSync",
+        "title": "Disable Auto-Sync",
+        "category": "blinky",
+        "icon": "$(sync)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "blinky",
+          "title": "MicroPython",
+          "icon": "$(circuit-board)"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "blinky.boardFiles",
+          "name": "Board Files",
+          "when": "blinky.connected",
+          "icon": "$(circuit-board)"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "blinky.refreshFiles",
+          "when": "view == blinky.boardFiles",
+          "group": "navigation"
+        },
+        {
+          "command": "blinky.uploadFile",
+          "when": "view == blinky.boardFiles",
+          "group": "navigation"
+        },
+        {
+          "command": "blinky.newFile",
+          "when": "view == blinky.boardFiles",
+          "group": "navigation"
+        },
+        {
+          "command": "blinky.newFolder",
+          "when": "view == blinky.boardFiles",
+          "group": "navigation"
+        },
+        {
+          "command": "blinky.syncProject",
+          "when": "view == blinky.boardFiles",
+          "group": "navigation"
+        },
+        {
+          "command": "blinky.enableAutoSync",
+          "when": "view == blinky.boardFiles && !blinky.autoSyncEnabled",
+          "group": "navigation"
+        },
+        {
+          "command": "blinky.disableAutoSync",
+          "when": "view == blinky.boardFiles && blinky.autoSyncEnabled",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "blinky.downloadFile",
+          "when": "view == blinky.boardFiles && viewItem == boardFile",
+          "group": "inline"
+        },
+        {
+          "command": "blinky.deleteEntry",
+          "when": "view == blinky.boardFiles",
+          "group": "inline"
+        },
+        {
+          "command": "blinky.downloadFile",
+          "when": "view == blinky.boardFiles && viewItem == boardFile",
+          "group": "1_actions"
+        },
+        {
+          "command": "blinky.uploadFile",
+          "when": "view == blinky.boardFiles && viewItem == boardDir",
+          "group": "1_actions"
+        },
+        {
+          "command": "blinky.newFile",
+          "when": "view == blinky.boardFiles && viewItem == boardDir",
+          "group": "2_new"
+        },
+        {
+          "command": "blinky.newFolder",
+          "when": "view == blinky.boardFiles && viewItem == boardDir",
+          "group": "2_new"
+        },
+        {
+          "command": "blinky.renameEntry",
+          "when": "view == blinky.boardFiles",
+          "group": "3_modify"
+        },
+        {
+          "command": "blinky.deleteEntry",
+          "when": "view == blinky.boardFiles",
+          "group": "3_modify"
+        }
+      ],
+      "editor/title/run": [
+        {
+          "command": "blinky.runFile",
+          "when": "blinky.connected && editorLangId == python",
+          "group": "navigation"
+        },
+        {
+          "command": "blinky.stopScript",
+          "when": "blinky.connected",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "blinky.runSelection",
+          "when": "blinky.connected && editorLangId == python",
+          "group": "1_run"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "blinky.runFile",
+        "key": "f5",
+        "when": "blinky.connected && editorLangId == python && !inDebugMode"
+      },
+      {
+        "command": "blinky.runSelection",
+        "key": "shift+enter",
+        "when": "blinky.connected && editorTextFocus && editorLangId == python"
+      },
+      {
+        "command": "blinky.stopScript",
+        "key": "shift+f5",
+        "when": "blinky.connected"
+      },
+      {
+        "command": "workbench.action.terminal.sendSequence",
+        "args": { "text": "\t" },
+        "key": "tab",
+        "when": "terminalFocus && terminalProcessSupported && blinky.connected"
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "blinky.getStarted",
+        "title": "Get Started with MicroPython",
+        "description": "Set up your ESP32 board and start coding with MicroPython in VS Code.",
+        "steps": [
+          {
+            "id": "install",
+            "title": "Install MicroPython",
+            "description": "Auto-detect your board and install MicroPython firmware. Plug in your ESP32 via USB first.\n\n[Install MicroPython](command:blinky.installMicroPython)",
+            "media": {
+              "markdown": "media/walkthrough/install.md"
+            },
+            "completionEvents": [
+              "onCommand:blinky.installMicroPython"
+            ]
+          },
+          {
+            "id": "project",
+            "title": "Create a Project",
+            "description": "Start from a template - blink, WiFi, web server, or sensor.\n\n[New Project](command:blinky.newProject)",
+            "media": {
+              "markdown": "media/walkthrough/project.md"
+            },
+            "completionEvents": [
+              "onCommand:blinky.newProject"
+            ]
+          },
+          {
+            "id": "connect",
+            "title": "Connect Your Board",
+            "description": "Plug in your ESP32 via USB and connect.\n\n[Connect to Board](command:blinky.connect)",
+            "media": {
+              "markdown": "media/walkthrough/connect.md"
+            },
+            "completionEvents": [
+              "onContext:blinky.connected"
+            ]
+          },
+          {
+            "id": "repl",
+            "title": "Open the REPL",
+            "description": "Open an interactive MicroPython terminal to test code live.\n\n[Open REPL](command:blinky.openRepl)",
+            "media": {
+              "markdown": "media/walkthrough/repl.md"
+            },
+            "completionEvents": [
+              "onCommand:blinky.openRepl"
+            ]
+          },
+          {
+            "id": "run",
+            "title": "Run a Python File",
+            "description": "Open a .py file and press F5, or click the ▶ button in the editor title bar.\n\n[Run File](command:blinky.runFile)",
+            "media": {
+              "markdown": "media/walkthrough/run.md"
+            },
+            "completionEvents": [
+              "onCommand:blinky.runFile"
+            ]
+          },
+          {
+            "id": "files",
+            "title": "Manage Board Files",
+            "description": "Browse, upload, and download files using the MicroPython sidebar panel. Use Sync to push your whole project.\n\n[Sync Project](command:blinky.syncProject)",
+            "media": {
+              "markdown": "media/walkthrough/files.md"
+            },
+            "completionEvents": [
+              "onCommand:blinky.syncProject"
+            ]
+          },
+          {
+            "id": "stubs",
+            "title": "Set Up Autocomplete",
+            "description": "Install MicroPython type stubs so Pylance provides autocomplete for board modules like `machine` and `network`.\n\n[Set Up Stubs](command:blinky.setupStubs)",
+            "media": {
+              "markdown": "media/walkthrough/stubs.md"
+            },
+            "completionEvents": [
+              "onCommand:blinky.setupStubs"
+            ]
+          }
+        ]
+      }
+    ],
+    "configuration": {
+      "title": "blinky",
+      "properties": {
+        "blinky.baudRate": {
+          "type": "number",
+          "default": 115200,
+          "description": "Serial baud rate for board communication"
+        },
+        "blinky.autoConnect": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically connect to the last used board on startup"
+        },
+        "blinky.autoOpenRepl": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically open the REPL terminal after connecting to a board"
+        },
+        "blinky.syncExclude": {
+          "type": "array",
+          "default": [
+            ".git",
+            ".vscode",
+            "__pycache__",
+            ".DS_Store",
+            "node_modules",
+            "*.pyc",
+            ".gitignore",
+            ".venv",
+            "venv"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "File and folder names to exclude from project sync. Supports exact names and *.ext glob patterns."
+        },
+        "blinky.flashBaudRate": {
+          "type": "number",
+          "default": 460800,
+          "description": "Baud rate for firmware flashing (higher = faster, default 460800)"
+        },
+        "blinky.repl.colorizePrompt": {
+          "type": "boolean",
+          "default": true,
+          "description": "Colorize REPL prompts (>>> in green, ... in yellow)"
+        },
+        "blinky.repl.colorizeErrors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight MicroPython tracebacks and errors with color in the REPL"
+        },
+        "blinky.repl.richBanner": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a rich welcome banner with board info when the REPL opens"
+        },
+        "blinky.repl.autocomplete": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Tab autocomplete in the REPL (uses MicroPython built-in completion)"
+        },
+        "blinky.repl.persistentHistory": {
+          "type": "boolean",
+          "default": true,
+          "description": "Persist REPL command history across sessions"
+        }
+      }
+    },
+    "notebooks": [
+      {
+        "type": "upyrepl",
+        "displayName": "MicroPython REPL Notebook",
+        "selector": [
+          {
+            "filenamePattern": "*.upyrepl"
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --external:serialport --external:@serialport/bindings-cpp --format=cjs --platform=node --sourcemap",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --external:serialport --external:@serialport/bindings-cpp --format=cjs --platform=node --sourcemap --watch",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "package": "npm run compile -- --minify && vsce package",
+    "package:linux-x64": "npm run compile -- --minify && vsce package --target linux-x64",
+    "package:darwin-arm64": "npm run compile -- --minify && vsce package --target darwin-arm64",
+    "package:win32-x64": "npm run compile -- --minify && vsce package --target win32-x64",
+    "prebuild": "npm run compile",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.96.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vscode/test-electron": "^2.4.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^9.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.57.1",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "serialport": "^12.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ]
+  }
+}

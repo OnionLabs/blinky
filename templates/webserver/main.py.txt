@@ -1,0 +1,44 @@
+import network
+import socket
+import time
+
+SSID = "YOUR_SSID"
+PASSWORD = "YOUR_PASSWORD"
+
+HTML = """<!DOCTYPE html>
+<html><head><title>MicroPython</title></head>
+<body><h1>MicroPython Web Server</h1>
+<p>Board IP: {ip}</p></body></html>"""
+
+
+def connect_wifi(ssid, password):
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.connect(ssid, password)
+    for _ in range(20):  # 10s timeout
+        if wlan.isconnected():
+            break
+        time.sleep(0.5)
+    else:
+        raise RuntimeError("WiFi connection failed")
+    return wlan.ifconfig()[0]
+
+
+ip = connect_wifi(SSID, PASSWORD)
+print("Listening on", ip)
+
+s = socket.socket()
+s.bind(("", 80))
+s.listen(1)
+
+while True:
+    conn, addr = s.accept()
+    try:
+        request = conn.recv(1024)
+        response = HTML.format(ip=ip)
+        conn.send("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n")
+        conn.send(response)
+    except OSError as e:
+        print("Client error:", e)
+    finally:
+        conn.close()

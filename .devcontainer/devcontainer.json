@@ -1,0 +1,25 @@
+{
+  "name": "blinky",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "latest",
+      "targets": "aarch64-apple-darwin,x86_64-unknown-linux-gnu,x86_64-pc-windows-msvc"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.extension-test-runner",
+        "connor4312.esbuild-problem-matchers"
+      ],
+      "settings": {
+        "typescript.tsdk": "node_modules/typescript/lib"
+      }
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh && [ -f package.json ] && npm install || true",
+  "remoteUser": "node"
+}

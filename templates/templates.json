@@ -1,0 +1,22 @@
+[
+  {
+    "id": "blink",
+    "label": "Blink LED",
+    "description": "Blink the onboard LED - the classic first MicroPython program"
+  },
+  {
+    "id": "wifi",
+    "label": "WiFi Scanner",
+    "description": "Scan for nearby WiFi networks and display signal strength"
+  },
+  {
+    "id": "webserver",
+    "label": "Web Server",
+    "description": "Minimal HTTP web server - control your board from a browser"
+  },
+  {
+    "id": "sensor",
+    "label": "Temperature Sensor",
+    "description": "Read temperature and humidity from a DHT11/DHT22 sensor"
+  }
+]

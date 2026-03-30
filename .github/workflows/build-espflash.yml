@@ -1,0 +1,65 @@
+# Build espflash binaries for 3 target platforms.
+# These binaries are bundled with the extension VSIX per-platform.
+#
+# Triggered on manual dispatch or when this workflow file changes.
+# Artifacts are uploaded and can be downloaded to bin/<platform>/.
+name: Build espflash binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      espflash_version:
+        description: 'espflash version (crate version, e.g. 3.2.0)'
+        required: true
+        default: '3.2.0'
+  push:
+    paths:
+      - '.github/workflows/build-espflash.yml'
+
+env:
+  ESPFLASH_VERSION: ${{ github.event.inputs.espflash_version || '3.2.0' }}
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: darwin-arm64
+          - os: ubuntu-slim
+            target: x86_64-unknown-linux-gnu
+            artifact: linux-x64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: win32-x64
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install espflash
+        run: cargo install espflash --version ${{ env.ESPFLASH_VERSION }} --target ${{ matrix.target }} --root ./espflash-out
+
+      - name: Prepare binary
+        shell: bash
+        run: |
+          mkdir -p bin/${{ matrix.artifact }}
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            cp ./espflash-out/bin/espflash.exe bin/${{ matrix.artifact }}/espflash.exe
+          else
+            cp ./espflash-out/bin/espflash bin/${{ matrix.artifact }}/espflash
+            chmod +x bin/${{ matrix.artifact }}/espflash
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: espflash-${{ matrix.artifact }}
+          path: bin/${{ matrix.artifact }}
+          retention-days: 90
