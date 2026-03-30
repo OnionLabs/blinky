@@ -184,8 +184,8 @@ export class EspFlasher {
       args.push('--chip', options.chip);
     }
 
-    // Don't prompt for user input (non-interactive)
-    args.push('--non-interactive');
+    // Don't prompt for user input
+    args.push('--confirm-port');
 
     return this._spawnProcess(espflash, args, onProgress, onOutput);
   }
@@ -209,7 +209,7 @@ export class EspFlasher {
       };
     }
 
-    const args = ['erase-flash', '--port', port, '--non-interactive'];
+    const args = ['erase-flash', '--port', port, '--confirm-port'];
     return this._spawnProcess(espflash, args, onProgress, onOutput);
   }
 
@@ -232,7 +232,7 @@ export class EspFlasher {
       };
     }
 
-    const args = ['board-info', '--port', port, '--non-interactive'];
+    const args = ['board-info', '--port', port, '--confirm-port'];
     const result = await this._spawnProcess(espflash, args, onProgress);
 
     if (!result.success) return result;
