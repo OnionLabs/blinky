@@ -36,7 +36,7 @@ export class FileTreeProvider implements vscode.TreeDataProvider<BoardFileEntry>
     }
     this._refreshTimer = setTimeout(() => {
       this._refreshTimer = undefined;
-      // Don't clear the cache here — it serves as a fallback if ls() fails.
+      // Don't clear the cache here - it serves as a fallback if ls() fails.
       // The cache is updated on every successful ls() in getChildren().
       this._onDidChangeTreeData.fire(element);
     }, 200);

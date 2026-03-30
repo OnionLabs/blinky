@@ -79,7 +79,7 @@ export class AutoSync implements vscode.Disposable {
     this._disposables.push(saveListener);
 
     this._outputChannel.appendLine('Auto-sync enabled');
-    vscode.window.showInformationMessage('Auto-sync enabled — files will upload on save.');
+    vscode.window.showInformationMessage('Auto-sync enabled - files will upload on save.');
   }
 
   disable(): void {
@@ -130,7 +130,7 @@ export class AutoSync implements vscode.Disposable {
     const isIdle = await conn.probeIdle();
     if (!isIdle) {
       const choice = await vscode.window.showErrorMessage(
-        `Auto-sync: cannot upload "${relativePath}" — a script is running on the board.`,
+        `Auto-sync: cannot upload "${relativePath}" - a script is running on the board.`,
         'Interrupt & Upload',
         'Skip',
       );
@@ -169,7 +169,7 @@ export class AutoSync implements vscode.Disposable {
       this._onDidUpload?.();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      this._outputChannel.appendLine(`Auto-sync error: ${relativePath} — ${msg}`);
+      this._outputChannel.appendLine(`Auto-sync error: ${relativePath} - ${msg}`);
       vscode.window.showWarningMessage(`Auto-sync failed for ${relativePath}: ${msg}`);
     } finally {
       this._uploading = false;
@@ -203,7 +203,7 @@ export class AutoSync implements vscode.Disposable {
     const isIdle = await conn.probeIdle();
     if (!isIdle) {
       const choice = await vscode.window.showErrorMessage(
-        `Auto-sync: cannot delete "${relativePath}" — a script is running on the board.`,
+        `Auto-sync: cannot delete "${relativePath}" - a script is running on the board.`,
         'Interrupt & Delete',
         'Skip',
       );
@@ -233,7 +233,7 @@ export class AutoSync implements vscode.Disposable {
       this._onDidUpload?.();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      this._outputChannel.appendLine(`Auto-sync delete error: ${relativePath} — ${msg}`);
+      this._outputChannel.appendLine(`Auto-sync delete error: ${relativePath} - ${msg}`);
     } finally {
       this._uploading = false;
     }

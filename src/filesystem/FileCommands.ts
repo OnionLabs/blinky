@@ -168,7 +168,7 @@ export function registerFileCommands(
       treeProvider.refresh();
     }),
 
-    // Preview / open file content — let user choose preview or download
+    // Preview / open file content - let user choose preview or download
     vscode.commands.registerCommand('blinky.previewFile', async (entry?: BoardFileEntry) => {
       if (!entry || entry.isDir) return;
       const fs = requireFs();

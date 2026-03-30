@@ -236,7 +236,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		replTerminal = createReplTerminal(connection, context.globalState);
 
-		// Track terminal closure — self-disposing listener
+		// Track terminal closure - self-disposing listener
 		let closeListener: vscode.Disposable | undefined;
 		closeListener = vscode.window.onDidCloseTerminal((t) => {
 			if (t === replTerminal) {

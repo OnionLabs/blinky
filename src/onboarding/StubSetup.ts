@@ -155,7 +155,7 @@ export class StubSetup {
     let stubPackage = platform ? STUB_PACKAGES[platform] : undefined;
 
     if (!stubPackage) {
-      // Board not connected or unknown platform — let user pick
+      // Board not connected or unknown platform - let user pick
       const items = Object.entries(STUB_PACKAGES).map(([port, pkg]) => ({
         label: port,
         description: pkg,

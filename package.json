@@ -1,6 +1,6 @@
 {
   "name": "blinky",
-  "displayName": "Blinky — MicroPython IDE",
+  "displayName": "Blinky - MicroPython IDE",
   "description": "MicroPython IDE for VS Code - REPL, file management, run scripts, and flash firmware for ESP32",
   "version": "0.1.0",
   "publisher": "blinky",

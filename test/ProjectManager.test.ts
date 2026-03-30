@@ -113,7 +113,7 @@ describe('ProjectManager', () => {
 
       await scaffoldProject(memento, process.cwd());
 
-      // Should skip existing files — writeFile not called for files that exist
+      // Should skip existing files - writeFile not called for files that exist
       // But it still writes since skipExisting only skips ones in the existing list
       // The key point is it doesn't abort entirely
       expect(writeSpy).not.toHaveBeenCalled();

@@ -4,6 +4,9 @@ on:
   push:
     tags: ['v*']
 
+env:
+  ESPFLASH_VERSION: '4.3.0'
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -12,7 +15,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - run: npm ci
@@ -31,22 +34,53 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: linux-x64
-          - target: darwin-arm64
-          - target: win32-x64
-    runs-on: ubuntu-latest
+          - os: ubuntu-latest
+            target: linux-x64
+            rust-target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: darwin-arm64
+            rust-target: aarch64-apple-darwin
+          - os: windows-latest
+            target: win32-x64
+            rust-target: x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - run: npm ci
 
-      - name: Build
+      - name: Build extension
         run: npm run compile -- --minify
+
+      # Build espflash from source on each platform
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-target }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libudev-dev
+
+      - name: Build espflash
+        run: cargo install espflash --version ${{ env.ESPFLASH_VERSION }} --target ${{ matrix.rust-target }} --root ./espflash-out
+
+      - name: Bundle espflash binary
+        shell: bash
+        run: |
+          mkdir -p bin/${{ matrix.target }}
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            cp ./espflash-out/bin/espflash.exe bin/${{ matrix.target }}/espflash.exe
+          else
+            cp ./espflash-out/bin/espflash bin/${{ matrix.target }}/espflash
+            chmod +x bin/${{ matrix.target }}/espflash
+          fi
 
       - name: Package VSIX
         run: npx vsce package --target ${{ matrix.target }} -o blinky-${{ matrix.target }}.vsix
