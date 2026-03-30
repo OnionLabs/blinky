@@ -140,7 +140,7 @@ describe('EspFlasher', () => {
       expect(args).toContain('921600');
       expect(args).toContain('--chip');
       expect(args).toContain('esp32s3');
-      expect(args).toContain('--confirm-port');
+      expect(args).toContain('--non-interactive');
     });
 
     it('reports failure on non-zero exit code', async () => {
@@ -274,7 +274,7 @@ describe('EspFlasher', () => {
       }
     });
 
-    it('passes board-info args with --confirm-port', async () => {
+    it('passes board-info args with --non-interactive', async () => {
       const proc = createMockProcess();
       const mockSpawn = createMockSpawn(proc);
       const flasher = new EspFlasher('/ext', mockSpawn);
@@ -289,7 +289,7 @@ describe('EspFlasher', () => {
       expect(args).toContain('board-info');
       expect(args).toContain('--port');
       expect(args).toContain('/dev/ttyUSB0');
-      expect(args).toContain('--confirm-port');
+      expect(args).toContain('--non-interactive');
     });
 
     it('returns error when output cannot be parsed', async () => {
