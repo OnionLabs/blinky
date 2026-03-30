@@ -1,0 +1,2 @@
+# boot.py - runs on every boot
+# import webrepl_setup  # uncomment to enable WebREPL

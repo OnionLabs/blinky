@@ -1,0 +1,16 @@
+from machine import Pin
+import dht
+import time
+
+# Change Pin(4) to match your wiring; use dht.DHT11(Pin(4)) for DHT11
+sensor = dht.DHT22(Pin(4))
+
+while True:
+    try:
+        sensor.measure()
+        temp = sensor.temperature()
+        hum = sensor.humidity()
+        print(f"Temp: {temp:.1f}C  Humidity: {hum:.1f}%")
+    except OSError as e:
+        print("Sensor read failed:", e)
+    time.sleep(2)

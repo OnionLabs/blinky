@@ -1,0 +1,9 @@
+from machine import Pin
+import time
+
+# Change Pin number to match your board's LED pin
+led = Pin(2, Pin.OUT)  # GPIO2 is the common onboard LED
+
+while True:
+    led.value(not led.value())
+    time.sleep(0.5)

@@ -1,0 +1,30 @@
+import network
+import time
+
+
+def connect_wifi(ssid, password):
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.connect(ssid, password)
+    for _ in range(20):  # 10s timeout
+        if wlan.isconnected():
+            break
+        time.sleep(0.5)
+    else:
+        print("WiFi connection failed")
+        return
+    print("Connected:", wlan.ifconfig()[0])
+
+
+def scan_networks():
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    networks = wlan.scan()
+    print(f"{'SSID':<32} {'RSSI':>5}  {'CH':>3}")
+    print("-" * 44)
+    for ssid, bssid, channel, rssi, auth, hidden in networks:
+        name = ssid.decode("utf-8") if ssid else "(hidden)"
+        print(f"{name:<32} {rssi:>5}  {channel:>3}")
+
+
+scan_networks()
