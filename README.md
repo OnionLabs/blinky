@@ -1,11 +1,15 @@
 # Blinky - a MicroPython IDE
 
+<img src="media/screenshots/getting-started.png" alt="Getting started" width="800">
+
 A VS Code extension that makes MicroPython development as easy as blinking an LED. Connect your board, write code, and run it - all from the editor.
 
 ## Features
 
 ### REPL Terminal
 Interactive MicroPython shell with syntax-colored output, tab autocomplete, persistent history, and a rich board-info banner on connect.
+
+<img src="media/screenshots/repl.png" alt="REPL Terminal" width="700">
 
 ### Run & Debug
 Run `.py` files directly on the board with F5 or the ▶ button. Run selected code snippets. Errors are parsed into VS Code diagnostics with clickable file links.
@@ -18,6 +22,8 @@ Detect your board, download the right MicroPython firmware, and flash - no comma
 
 ### REPL Notebooks
 Jupyter-style notebooks (`.upyrepl`) that run cells on the board. Mix code and documentation, re-run experiments, and keep a record of your session.
+
+<img src="media/screenshots/notebook.png" alt="REPL Notebooks" width="700">
 
 ### Project Templates
 Scaffold a new project from a template: Blink LED, WiFi Scanner, Web Server, or Temperature Sensor.
