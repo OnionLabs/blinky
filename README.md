@@ -3,7 +3,7 @@
 [![CI](https://github.com/OnionLabs/blinky/actions/workflows/ci.yml/badge.svg)](https://github.com/OnionLabs/blinky/actions/workflows/ci.yml)
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/todo.todo?label=marketplace)](https://marketplace.visualstudio.com/items?itemName=todo.todo)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/todo.todo)](https://marketplace.visualstudio.com/items?itemName=todo.todo)
-[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 A VS Code extension that makes MicroPython development as easy as blinking an LED. Connect your board, write code, and run it - all from the editor.
 
@@ -95,4 +95,4 @@ Contributions are welcome! Please open an issue or pull request.
 
 ## License
 
-[AGPL-3.0](LICENSE) - free and open source. If you modify and distribute Blinky, or run it as part of a service, you must share your changes under the same license.
+[MIT](LICENSE)
