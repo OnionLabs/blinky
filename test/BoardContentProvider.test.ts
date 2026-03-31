@@ -9,7 +9,7 @@ describe('BoardContentProvider', () => {
   }
 
   it('exports BOARD_SCHEME', () => {
-    expect(BOARD_SCHEME).toBe('upyboard');
+    expect(BOARD_SCHEME).toBe('boardfs');
   });
 
   it('returns file content from board', async () => {

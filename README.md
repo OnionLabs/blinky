@@ -26,7 +26,7 @@ Browse, upload, download, and delete files on the board from the sidebar. Sync y
 Detect your board, download the right MicroPython firmware, and flash - no command-line tools needed. Supports ESP32, ESP32-S2, ESP32-S3, ESP32-C3, ESP32-C6, and ESP32-H2.
 
 ### REPL Notebooks
-Jupyter-style notebooks (`.upyrepl`) that run cells on the board. Mix code and documentation, re-run experiments, and keep a record of your session.
+Jupyter-style notebooks (`.mpnb`) that run cells on the board. Mix code and documentation, re-run experiments, and keep a record of your session.
 
 <img src="media/screenshots/notebook.png" alt="REPL Notebooks" width="700">
 

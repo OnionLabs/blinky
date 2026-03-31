@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import { BoardFileSystem } from './BoardFileSystem';
 
-export const BOARD_SCHEME = 'upyboard';
+export const BOARD_SCHEME = 'boardfs';
 
 /**
  * Virtual document provider for board files.
- * Uses a `upyboard:` URI scheme so the same board file always opens in the same tab.
+ * Uses a `boardfs:` URI scheme so the same board file always opens in the same tab.
  * Content is cached and only refreshed on explicit invalidation.
  */
 export class BoardContentProvider implements vscode.TextDocumentContentProvider {

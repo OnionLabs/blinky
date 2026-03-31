@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-export const NOTEBOOK_TYPE = 'upyrepl';
+export const NOTEBOOK_TYPE = 'mpnb';
 
 interface ReplNotebookData {
   cells: Array<{
@@ -14,7 +14,7 @@ interface ReplNotebookData {
 }
 
 /**
- * Serializer for .upyrepl notebook files.
+ * Serializer for .mpnb notebook files.
  * Format is a simple JSON structure with cells and their outputs.
  */
 export class ReplNotebookSerializer implements vscode.NotebookSerializer {

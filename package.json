@@ -489,11 +489,11 @@
     },
     "notebooks": [
       {
-        "type": "upyrepl",
+        "type": "mpnb",
         "displayName": "MicroPython REPL Notebook",
         "selector": [
           {
-            "filenamePattern": "*.upyrepl"
+            "filenamePattern": "*.mpnb"
           }
         ]
       }
