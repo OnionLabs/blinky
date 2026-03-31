@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as vscode from 'vscode';
 import { openPendingScaffold, scaffoldProject } from '../src/project/ProjectManager';
 
@@ -18,6 +18,10 @@ function createMockMemento(data: Record<string, any> = {}) {
 }
 
 describe('ProjectManager', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('openPendingScaffold', () => {
     it('does nothing when no pending scaffold', async () => {
       const memento = createMockMemento();
