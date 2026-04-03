@@ -1,9 +1,9 @@
 {
   "name": "blinky",
   "displayName": "Blinky - MicroPython IDE",
-  "description": "MicroPython IDE for VS Code - REPL, file management, run scripts, and flash firmware for ESP32",
+  "description": "The complete MicroPython IDE — connect, code, flash, and run on ESP32 boards directly from VS Code",
   "version": "0.1.0",
-  "publisher": "blinky",
+  "publisher": "onionlabs",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -19,7 +19,7 @@
   },
   "categories": [
     "Programming Languages",
-    "Other"
+    "Education"
   ],
   "keywords": [
     "micropython",
@@ -27,7 +27,12 @@
     "embedded",
     "iot",
     "serial",
-    "repl"
+    "repl",
+    "rp2040",
+    "pico",
+    "stm32",
+    "firmware",
+    "flash"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [

@@ -1,13 +1,24 @@
 # Blinky - a MicroPython IDE
 
 [![CI](https://github.com/OnionLabs/blinky/actions/workflows/ci.yml/badge.svg)](https://github.com/OnionLabs/blinky/actions/workflows/ci.yml)
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/todo.todo?label=marketplace)](https://marketplace.visualstudio.com/items?itemName=todo.todo)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/todo.todo)](https://marketplace.visualstudio.com/items?itemName=todo.todo)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/onionlabs.blinky?label=marketplace)](https://marketplace.visualstudio.com/items?itemName=onionlabs.blinky)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/onionlabs.blinky)](https://marketplace.visualstudio.com/items?itemName=onionlabs.blinky)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-A VS Code extension that makes MicroPython development as easy as blinking an LED. Connect your board, write code, and run it - all from the editor.
+## MicroPython development, redefined.
+
+Everything you need to build, run, and ship MicroPython projects — all inside VS Code. No terminal. No toolchain setup. No friction. Just plug in your board and start coding.
 
 <img src="media/screenshots/getting-started.png" alt="Getting started" width="800">
+
+## Why Blinky?
+
+- **Zero setup.** Install the extension. Plug in your board. You're done.
+- **One-click firmware install.** Detects your board, downloads the right MicroPython build, and flashes it — automatically.
+- **Write code, hit F5.** Your script runs on the board instantly. Errors show up right in the editor.
+- **Real-time file sync.** Save a file, it lands on the board. No manual upload steps.
+- **REPL notebooks.** Experiment interactively, keep a record of every session.
+- **Full autocomplete.** Type stubs for `machine`, `network`, `esp32` — Pylance just works.
 
 ## Features
 
@@ -55,8 +66,8 @@ Or run **Blinky: Open Getting Started Guide** for a step-by-step walkthrough.
 | ESP32-C3 | ✅ | ✅ | ✅ |
 | ESP32-C6 | ✅ | ✅ | ✅ |
 | ESP32-H2 | ✅ | ✅ | ✅ |
-| RP2040 / Pico | TODO | ✅ | ✅ |
-| STM32 | TODO | ✅ | ✅ |
+| RP2040 / Pico | — | ✅ | ✅ |
+| STM32 | — | ✅ | ✅ |
 
 Any board running MicroPython with a serial REPL should work for REPL and file operations. Firmware flashing is currently ESP32-only.
 
@@ -91,7 +102,7 @@ All commands are available via the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or pull request.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and guidelines.
 
 ## License
 
