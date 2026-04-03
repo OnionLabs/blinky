@@ -1,8 +1,8 @@
 # Blinky - a MicroPython IDE
 
 [![CI](https://github.com/OnionLabs/blinky/actions/workflows/ci.yml/badge.svg)](https://github.com/OnionLabs/blinky/actions/workflows/ci.yml)
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/onionlabs.blinky?label=marketplace)](https://marketplace.visualstudio.com/items?itemName=onionlabs.blinky)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/onionlabs.blinky)](https://marketplace.visualstudio.com/items?itemName=onionlabs.blinky)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/onionlabs.blinky-micropython?label=marketplace)](https://marketplace.visualstudio.com/items?itemName=onionlabs.blinky-micropython)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/onionlabs.blinky-micropython)](https://marketplace.visualstudio.com/items?itemName=onionlabs.blinky-micropython)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ## MicroPython development, redefined.
