@@ -82,7 +82,7 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.rust-target }}" = "aarch64-unknown-linux-gnu" ]; then
-            # Skip libudev for arm64 cross-build — apt arm64 packages unavailable on x86 runners.
+            # Skip libudev for arm64 cross-build - apt arm64 packages unavailable on x86 runners.
             # espflash uses libudev only for auto port-detection; we always pass --port explicitly.
             cargo install espflash --version ${{ env.ESPFLASH_VERSION }} --no-default-features --features cli --target ${{ matrix.rust-target }} --root ./espflash-out
           else

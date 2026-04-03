@@ -1,6 +1,6 @@
 # Open the REPL
 
-The **REPL** (Read-Eval-Print Loop) is an interactive MicroPython console running directly on your board.
+A live Python terminal running on your board. Type a command, see it happen.
 
 - Run **blinky: Open REPL Terminal** from the Command Palette
 - Type Python expressions and see results immediately

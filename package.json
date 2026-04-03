@@ -1,7 +1,7 @@
 {
   "name": "blinky",
   "displayName": "Blinky - MicroPython IDE",
-  "description": "The complete MicroPython IDE — connect, code, flash, and run on ESP32 boards directly from VS Code",
+  "description": "The complete MicroPython IDE - connect, code, flash, and run on ESP32 boards directly from VS Code",
   "version": "0.1.0",
   "publisher": "onionlabs",
   "license": "MIT",

@@ -1,6 +1,6 @@
 # Install MicroPython
 
-Get MicroPython running on your ESP32 board in one click.
+One click. Your board runs MicroPython.
 
 ## What happens
 
@@ -11,8 +11,7 @@ Get MicroPython running on your ESP32 board in one click.
 
 ## Before you start
 
-- Plug your ESP32 board into a USB port
-- No driver installation needed on most systems (CP210x / CH340 drivers may be required on some boards)
+- Plug your ESP32 board into USB. That's it.
 
 ## Tip
 

@@ -35,8 +35,8 @@ npm install
 
 ## Code Style
 
-- TypeScript with ESLint — the pre-commit hook runs `eslint --fix` automatically
-- No manual formatting rules — just follow what's already there
+- TypeScript with ESLint - the pre-commit hook runs `eslint --fix` automatically
+- No manual formatting rules - just follow what's already there
 
 ## Testing
 

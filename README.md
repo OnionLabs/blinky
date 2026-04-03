@@ -7,18 +7,18 @@
 
 ## MicroPython development, redefined.
 
-Everything you need to build, run, and ship MicroPython projects — all inside VS Code. No terminal. No toolchain setup. No friction. Just plug in your board and start coding.
+Everything you need to build, run, and ship MicroPython projects - all inside VS Code. No terminal. No toolchain setup. No friction. Just plug in your board and start coding.
 
 <img src="media/screenshots/getting-started.png" alt="Getting started" width="800">
 
 ## Why Blinky?
 
 - **Zero setup.** Install the extension. Plug in your board. You're done.
-- **One-click firmware install.** Detects your board, downloads the right MicroPython build, and flashes it — automatically.
+- **One-click firmware install.** Detects your board, downloads the right MicroPython build, and flashes it - automatically.
 - **Write code, hit F5.** Your script runs on the board instantly. Errors show up right in the editor.
 - **Real-time file sync.** Save a file, it lands on the board. No manual upload steps.
 - **REPL notebooks.** Experiment interactively, keep a record of every session.
-- **Full autocomplete.** Type stubs for `machine`, `network`, `esp32` — Pylance just works.
+- **Full autocomplete.** Type stubs for `machine`, `network`, `esp32` - Pylance just works.
 
 ## Features
 
@@ -66,8 +66,8 @@ Or run **Blinky: Open Getting Started Guide** for a step-by-step walkthrough.
 | ESP32-C3 | ✅ | ✅ | ✅ |
 | ESP32-C6 | ✅ | ✅ | ✅ |
 | ESP32-H2 | ✅ | ✅ | ✅ |
-| RP2040 / Pico | — | ✅ | ✅ |
-| STM32 | — | ✅ | ✅ |
+| RP2040 / Pico | - | ✅ | ✅ |
+| STM32 | - | ✅ | ✅ |
 
 Any board running MicroPython with a serial REPL should work for REPL and file operations. Firmware flashing is currently ESP32-only.
 

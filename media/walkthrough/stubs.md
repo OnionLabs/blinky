@@ -1,6 +1,6 @@
 # Set Up Autocomplete
 
-MicroPython has modules like `machine`, `network`, and `esp32` that don't exist in standard Python. Install **type stubs** so Pylance can provide autocomplete and type checking.
+Get full autocomplete for `machine.Pin`, `network.WLAN`, and every MicroPython module - powered by Pylance.
 
 Run **blinky: Set Up MicroPython Stubs** from the Command Palette:
 

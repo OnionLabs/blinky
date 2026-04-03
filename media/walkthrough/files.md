@@ -7,6 +7,6 @@ The **MicroPython** sidebar panel shows all files on your board.
 - **Rename/Delete** - Manage the board filesystem
 - **Sync Project** - Push your entire workspace to the board with one click
 
-Sync uses SHA-256 hashing to detect changes - only modified files are uploaded, making it fast even for large projects.
+Sync is smart - sends only the files you've changed. Sync whole projects in seconds.
 
 > **Tip:** Configure `blinky.syncExclude` to skip files like `.git`, `__pycache__`, and `.venv`.

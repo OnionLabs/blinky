@@ -1,6 +1,6 @@
 # Run a Python File
 
-Run MicroPython scripts directly from the editor:
+Write code. Press F5. It runs on your board.
 
 - **F5** - Run the current file on the board
 - **Shift+Enter** - Run the current line or selection
