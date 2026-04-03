@@ -36,8 +36,8 @@ while True:
     try:
         request = conn.recv(1024)
         response = HTML.format(ip=ip)
-        conn.send("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n")
-        conn.send(response)
+        conn.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n")
+        conn.send(response.encode())
     except OSError as e:
         print("Client error:", e)
     finally:
