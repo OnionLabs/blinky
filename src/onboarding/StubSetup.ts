@@ -178,7 +178,7 @@ export class StubSetup {
     const terminal = vscode.window.createTerminal({ name: 'Install MicroPython Stubs' });
     terminal.show();
     const escapedDir = stubsDir.replace(/'/g, "'\\''");
-    terminal.sendText(`pip install --target '${escapedDir}' ${stubPackage}${versionSpec}`);
+    terminal.sendText(`mkdir -p '${escapedDir}' && python3 -m pip install --target '${escapedDir}' ${stubPackage}${versionSpec}`);
 
     // Configure extraPaths
     const config = vscode.workspace.getConfiguration('python.analysis');
@@ -187,6 +187,17 @@ export class StubSetup {
 
     if (!extraPaths.includes(relativePath)) {
       await config.update('extraPaths', [...extraPaths, relativePath], vscode.ConfigurationTarget.Workspace);
+    }
+
+    // Suppress "no source" warnings for MicroPython board modules — stubs are intentionally source-less
+    const diagConfig = vscode.workspace.getConfiguration('python.analysis');
+    const overrides = diagConfig.get<Record<string, string>>('diagnosticSeverityOverrides', {});
+    if (overrides['reportMissingModuleSource'] !== 'none') {
+      await diagConfig.update(
+        'diagnosticSeverityOverrides',
+        { ...overrides, reportMissingModuleSource: 'none' },
+        vscode.ConfigurationTarget.Workspace,
+      );
     }
 
     vscode.window.showInformationMessage(
@@ -199,10 +210,9 @@ export class StubSetup {
    */
   private _checkPip(): Promise<boolean> {
     return new Promise((resolve) => {
-      execFile('pip', ['--version'], (err) => {
+      execFile('python3', ['-m', 'pip', '--version'], (err) => {
         if (err) {
-          // Try python -m pip as fallback
-          execFile('python3', ['-m', 'pip', '--version'], (err2) => {
+          execFile('pip', ['--version'], (err2) => {
             resolve(!err2);
           });
         } else {
