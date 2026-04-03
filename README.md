@@ -36,6 +36,8 @@ Browse, upload, download, and delete files on the board from the sidebar. Sync y
 ### Firmware Flashing
 Detect your board, download the right MicroPython firmware, and flash - no command-line tools needed. Supports ESP32, ESP32-S2, ESP32-S3, ESP32-C3, ESP32-C6, and ESP32-H2.
 
+<img src="media/screenshots/install_micropython.png" alt="Install MicroPython" width="700">
+
 ### REPL Notebooks
 Jupyter-style notebooks (`.mpnb`) that run cells on the board. Mix code and documentation, re-run experiments, and keep a record of your session.
 
@@ -46,6 +48,8 @@ Scaffold a new project from a template: Blink LED, WiFi Scanner, Web Server, or 
 
 ### Autocomplete
 Install MicroPython type stubs so Pylance provides autocomplete for board modules like `machine`, `network`, and `esp32`.
+
+<img src="media/screenshots/autocomplete.png" alt="Code audocomplete" width="700">
 
 ## Getting Started
 
