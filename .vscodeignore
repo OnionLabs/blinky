@@ -7,8 +7,11 @@ test/
 coverage/
 node_modules/
 *.vsix
+*.map
 tsconfig.json
 eslint.config.mjs
 vitest.config.ts
+package-lock.json
 .gitignore
+CONTRIBUTING.md
 PLAN.md
