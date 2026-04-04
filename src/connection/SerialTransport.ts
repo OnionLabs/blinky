@@ -69,7 +69,9 @@ export class SerialTransport extends EventEmitter {
         if (err) {
           reject(err);
         } else {
-          resolve();
+          // Lower DTR after open to avoid triggering the ESP32 auto-reset
+          // circuit (DTR is wired to EN/RST through a capacitor on most devkits).
+          this._port!.set({ dtr: false, rts: false }, () => resolve());
         }
       });
     });

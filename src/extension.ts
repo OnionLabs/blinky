@@ -720,7 +720,7 @@ export function activate(context: vscode.ExtensionContext) {
 					const flashResult = await flasher.flash(
 						portPath,
 						firmwarePath,
-						{ baudRate: 460800 },
+						{ baudRate: 460800, address: mapping.flashAddress },
 						(p) => progress.report({ message: p.message }),
 						(line) => outputChannel.appendLine(line),
 					);

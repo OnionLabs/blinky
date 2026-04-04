@@ -103,7 +103,7 @@ export class DeviceConnection extends EventEmitter {
    * Returns true if idle, false if something appears to be running.
    * Non-destructive - does NOT interrupt running code.
    */
-  async probeIdle(timeoutMs: number = 500): Promise<boolean> {
+  async probeIdle(timeoutMs: number = 3000): Promise<boolean> {
     try {
       await this._transport.write('\r');
       const buf = await this._transport.readUntil(
