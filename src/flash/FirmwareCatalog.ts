@@ -19,6 +19,8 @@ export interface BoardMapping {
   board: string;
   /** Human-readable name */
   label: string;
+  /** Flash address for firmware binary (ESP32 original = 0x1000, all others = 0x0) */
+  flashAddress: string;
   /** Available firmware variants */
   variants: { id: string; label: string }[];
 }
@@ -30,6 +32,7 @@ export const CHIP_BOARD_MAP: Record<string, BoardMapping | undefined> = {
   esp32: {
     board: 'ESP32_GENERIC',
     label: 'ESP32',
+    flashAddress: '0x1000',
     variants: [
       { id: '', label: 'Generic' },
       { id: 'SPIRAM', label: 'SPIRAM / WROVER' },
@@ -41,6 +44,7 @@ export const CHIP_BOARD_MAP: Record<string, BoardMapping | undefined> = {
   esp32s2: {
     board: 'ESP32_GENERIC_S2',
     label: 'ESP32-S2',
+    flashAddress: '0x0',
     variants: [
       { id: '', label: 'Generic' },
       { id: 'SPIRAM', label: 'SPIRAM' },
@@ -49,6 +53,7 @@ export const CHIP_BOARD_MAP: Record<string, BoardMapping | undefined> = {
   esp32s3: {
     board: 'ESP32_GENERIC_S3',
     label: 'ESP32-S3',
+    flashAddress: '0x0',
     variants: [
       { id: '', label: 'Generic' },
       { id: 'SPIRAM_OCT', label: 'Octal-SPIRAM' },
@@ -57,16 +62,19 @@ export const CHIP_BOARD_MAP: Record<string, BoardMapping | undefined> = {
   esp32c3: {
     board: 'ESP32_GENERIC_C3',
     label: 'ESP32-C3',
+    flashAddress: '0x0',
     variants: [{ id: '', label: 'Generic' }],
   },
   esp32c6: {
     board: 'ESP32_GENERIC_C6',
     label: 'ESP32-C6',
+    flashAddress: '0x0',
     variants: [{ id: '', label: 'Generic' }],
   },
   esp32h2: {
     board: 'ESP32_GENERIC_H2',
     label: 'ESP32-H2',
+    flashAddress: '0x0',
     variants: [{ id: '', label: 'Generic' }],
   },
 };
