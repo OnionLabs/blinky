@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 - 2026-04-05
+
+### Fixed
+
+- ESP32 (the original one) firmware now flashes at the correct address (0x1000), fixing `flash read err, 1000` boot failures after install - which were invisible mostly - causing the infinite wait on REPL and the prompt to interrupt the running script.
+
 ## 0.1.0 - 2026-04-04
 
 ### Added
