@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 - 2026-04-05
+
+### Fixed
+
+- Extension commands were silently unavailable on all platforms due to `serialport` native module not being included in the published VSIX
+
 ## 0.1.1 - 2026-04-05
 
 ### Fixed
