@@ -57,7 +57,7 @@ export class ReplNotebookController {
       execution.replaceOutput([
         new vscode.NotebookCellOutput([
           vscode.NotebookCellOutputItem.stderr(
-            'Not connected to a board. Use the status bar or Cmd+Shift+P → blinky: Connect',
+            `Not connected to a board. Use the status bar or ${process.platform === 'darwin' ? 'Cmd' : 'Ctrl'}+Shift+P → blinky: Connect`,
           ),
         ]),
       ]);

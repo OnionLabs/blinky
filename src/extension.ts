@@ -278,6 +278,36 @@ export function activate(context: vscode.ExtensionContext) {
 		return choice?.path;
 	};
 
+	/**
+	 * Detect the chip on the given port and return the correct flash address.
+	 * Falls back to prompting the user if detection fails or the chip is unknown.
+	 * Returns undefined if the user cancels.
+	 */
+	const resolveFlashAddress = async (
+		flasher: EspFlasher,
+		portPath: string,
+	): Promise<string | undefined> => {
+		const boardInfoResult = await flasher.boardInfo(portPath);
+		if ('info' in boardInfoResult) {
+			const mapping = CHIP_BOARD_MAP[boardInfoResult.info.chip];
+			if (mapping) return mapping.flashAddress;
+			// Chip detected but not in our map
+			return vscode.window.showInputBox({
+				title: 'Flash Address',
+				prompt: `Unknown chip "${boardInfoResult.info.chip}". Enter the flash address for this firmware.`,
+				value: '0x0',
+				validateInput: (v) => /^0x[0-9a-fA-F]+$/.test(v) ? undefined : 'Enter a hex address, e.g. 0x0 or 0x1000',
+			});
+		}
+		// Detection failed entirely
+		return vscode.window.showInputBox({
+			title: 'Flash Address',
+			prompt: 'Could not detect chip. Enter the flash address (0x1000 for ESP32, 0x0 for ESP32-S2/S3/C3/C6/H2).',
+			value: '0x0',
+			validateInput: (v) => /^0x[0-9a-fA-F]+$/.test(v) ? undefined : 'Enter a hex address, e.g. 0x0 or 0x1000',
+		});
+	};
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand('blinky.connect', async () => {
 			// Try auto-detect first
@@ -478,10 +508,13 @@ export function activate(context: vscode.ExtensionContext) {
 					outputChannel.appendLine('--- Flash output ---');
 					outputChannel.show(true);
 
+					const flashAddress = await resolveFlashAddress(flasher, portPath);
+					if (flashAddress === undefined) return; // user cancelled
+
 					const result = await flasher.flash(
 						portPath,
 						fileUris[0].fsPath,
-						{ baudRate: flashBaud },
+						{ baudRate: flashBaud, address: flashAddress },
 						(p) => progress.report({ message: p.message }),
 						(line) => outputChannel.appendLine(line),
 					);

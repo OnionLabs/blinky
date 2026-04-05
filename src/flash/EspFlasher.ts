@@ -174,8 +174,8 @@ export class EspFlasher {
     const address = options.address ?? '0x0';
 
     const args = isBin
-      ? ['write-bin', '--port', port, address, firmwarePath]
-      : ['flash', firmwarePath, '--port', port];
+      ? ['write-bin', '--port', port, '--after', 'hard-reset', address, firmwarePath]
+      : ['flash', '--after', 'hard-reset', firmwarePath, '--port', port];
 
     if (options.baudRate) {
       args.push('--baud', String(options.baudRate));

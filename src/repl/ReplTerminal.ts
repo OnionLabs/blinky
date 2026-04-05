@@ -141,8 +141,9 @@ export class ReplTerminal implements vscode.Pseudoterminal {
     // Handle disconnection - keep terminal open, show message
     this._stateHandler = (state: string) => {
       if (state === 'disconnected' || state === 'error') {
+        const shortcut = process.platform === 'darwin' ? 'Cmd+Shift+P' : 'Ctrl+Shift+P';
         this._write('\r\n\x1b[31m[Disconnected - board was reset or unplugged]\x1b[0m\r\n');
-        this._write('\x1b[33mReconnect via the status bar or Cmd+Shift+P → blinky: Connect\x1b[0m\r\n');
+        this._write(`\x1b[33mReconnect via the status bar or ${shortcut} → blinky: Connect\x1b[0m\r\n`);
       } else if (state === 'connected') {
         this._write('\r\n\x1b[32m[Reconnected]\x1b[0m\r\n');
         // Get a clean prompt
