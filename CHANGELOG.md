@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0 - 2026-04-06
+
+### Added
+
+- ESP8266 support (ESP-01, NodeMCU, Wemos D1 Mini) — REPL, file management, and script execution. Flashing is not supported due to ESP8266 bootloader limitations; use `esptool.py` to install MicroPython first
+- Auto-reset after flashing — board reboots into MicroPython immediately, no manual power-cycle needed
+- "Flash Firmware" command now auto-detects the chip and uses the correct flash address; prompts user for unknown chips
+
+### Fixed
+
+- `Cmd+Shift+P` shown on Windows/Linux in REPL disconnect message and notebook error — now correctly shows `Ctrl+Shift+P`
+- Raw espflash error output no longer leaks into user-facing board detection error messages
+
 ## 0.1.3 - 2026-04-05
 
 ### Fixed
