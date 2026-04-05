@@ -62,16 +62,12 @@ Or run **Blinky: Open Getting Started Guide** for a step-by-step walkthrough.
 
 ## Supported Boards
 
-| Board | Flash | REPL | File Sync |
-|-------|-------|------|-----------|
-| ESP32 | ✅ | ✅ | ✅ |
-| ESP32-S2 | ✅ | ✅ | ✅ |
-| ESP32-S3 | ✅ | ✅ | ✅ |
-| ESP32-C3 | ✅ | ✅ | ✅ |
-| ESP32-C6 | ✅ | ✅ | ✅ |
-| ESP32-H2 | ✅ | ✅ | ✅ |
-| RP2040 / Pico | - | ✅ | ✅ |
-| STM32 | - | ✅ | ✅ |
+| Board | Flash | REPL | File Sync | Comment |
+|-------|-------|------|-----------|---------|
+| ESP32 | ✅ | ✅ | ✅ | |
+| ESP8266 | - | ✅ | ✅ | Requires additional dependency; support for flashing will not be added - use `esptool.py` externally |
+| RP2040 / Pico | - | ✅ | ✅ | |
+| STM32 | - | ✅ | ✅ | |
 
 Any board running MicroPython with a serial REPL should work for REPL and file operations. Firmware flashing is currently ESP32-only.
 
