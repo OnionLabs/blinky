@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 - 2026-04-05
+
+### Fixed
+
+- Linux builds now compiled against glibc 2.35 (Ubuntu 22.04) for compatibility with Debian 12, Fedora 38+, RHEL 9, and Ubuntu 22.04+
+
 ## 0.1.2 - 2026-04-05
 
 ### Fixed
