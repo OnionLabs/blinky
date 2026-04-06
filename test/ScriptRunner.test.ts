@@ -7,6 +7,7 @@ function createMockConnection(result = { stdout: '', stderr: '' }) {
   return {
     isConnected: true,
     executeRaw: vi.fn().mockResolvedValue(result),
+    executeRawStreaming: vi.fn().mockResolvedValue(result),
     interrupt: vi.fn().mockResolvedValue(undefined),
   } as any;
 }
@@ -17,13 +18,24 @@ function createMockBoardFs() {
   } as any;
 }
 
+function createMockOutputChannel() {
+  return {
+    append: vi.fn(),
+    appendLine: vi.fn(),
+    show: vi.fn(),
+    clear: vi.fn(),
+  } as any;
+}
+
 describe('ScriptRunner', () => {
   let runner: ScriptRunner;
   let diagnostics: DiagnosticManager;
+  let output: ReturnType<typeof createMockOutputChannel>;
 
   beforeEach(() => {
     diagnostics = new DiagnosticManager();
-    runner = new ScriptRunner(diagnostics);
+    output = createMockOutputChannel();
+    runner = new ScriptRunner(diagnostics, output);
   });
 
   it('starts not running', () => {
@@ -39,7 +51,7 @@ describe('ScriptRunner', () => {
       await runner.runFile(conn, boardFs, uri);
 
       expect(boardFs.writeFile).toHaveBeenCalledWith('/main.py', expect.any(String));
-      expect(conn.executeRaw).toHaveBeenCalledWith(expect.stringContaining('exec(compile('));
+      expect(conn.executeRawStreaming).toHaveBeenCalledWith(expect.stringContaining('exec(compile('), expect.any(Object));
       expect(runner.isRunning).toBe(false);
     });
 
@@ -71,7 +83,7 @@ NameError: name 'x' is not defined`;
 
     it('resets running flag on error', async () => {
       const conn = createMockConnection();
-      conn.executeRaw.mockRejectedValue(new Error('timeout'));
+      conn.executeRawStreaming.mockRejectedValue(new Error('timeout'));
       const boardFs = createMockBoardFs();
       const uri = vscode.Uri.file('/workspace/main.py');
 
@@ -84,7 +96,7 @@ NameError: name 'x' is not defined`;
     it('executes code directly', async () => {
       const conn = createMockConnection({ stdout: 'hi\n', stderr: '' });
       await runner.runCode(conn, 'print("hi")');
-      expect(conn.executeRaw).toHaveBeenCalledWith('print("hi")');
+      expect(conn.executeRawStreaming).toHaveBeenCalledWith('print("hi")', expect.any(Object));
       expect(runner.isRunning).toBe(false);
     });
 
@@ -109,7 +121,7 @@ TypeError: can't convert`;
 
     it('resets running flag on error', async () => {
       const conn = createMockConnection();
-      conn.executeRaw.mockRejectedValue(new Error('fail'));
+      conn.executeRawStreaming.mockRejectedValue(new Error('fail'));
       await expect(runner.runCode(conn, 'x')).rejects.toThrow('fail');
       expect(runner.isRunning).toBe(false);
     });

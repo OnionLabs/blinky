@@ -193,19 +193,25 @@ export class RawRepl {
     let okSeen = false;
     let stdoutSoFar = '';
 
-    // Set up cancellation: send CTRL-C to interrupt the running code
-    let cancelled = false;
-    const onCancel = () => {
-      if (!cancelled) {
-        cancelled = true;
-        this._transport.write(CTRL_C).catch(() => {});
-      }
-    };
-    const cancelDisposable = options.signal?.onCancellationRequested(onCancel);
-
     const MAX_BUFFER = 10 * 1024 * 1024; // 10 MB safety limit
 
     return new Promise<RawReplResult>((resolve, reject) => {
+      // Set up cancellation: send CTRL-C to interrupt the running code.
+      // If the board doesn't respond (e.g. after a reset), force-resolve after a short timeout.
+      let cancelled = false;
+      let cancelTimer: ReturnType<typeof setTimeout> | undefined;
+      const onCancel = () => {
+        if (!cancelled) {
+          cancelled = true;
+          this._transport.write(CTRL_C).catch(() => {});
+          cancelTimer = setTimeout(() => {
+            cleanup();
+            resolve({ stdout: stdoutSoFar, stderr: '' });
+          }, 500);
+        }
+      };
+      const cancelDisposable = options.signal?.onCancellationRequested(onCancel);
+
       const onData = (data: Buffer) => {
         accumulated += data.toString('utf-8');
 
@@ -262,6 +268,7 @@ export class RawRepl {
       };
 
       const cleanup = () => {
+        if (cancelTimer) clearTimeout(cancelTimer);
         cancelDisposable?.dispose();
         this._transport.removeListener('_rawData', onData);
         this._transport.removeListener('error', onError);
