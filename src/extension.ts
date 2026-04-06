@@ -70,7 +70,7 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	const diagnosticMgr = new DiagnosticManager();
-	const scriptRunner = new ScriptRunner(diagnosticMgr);
+	const scriptRunner = new ScriptRunner(diagnosticMgr, outputChannel);
 	const stubSetup = new StubSetup(context);
 	const onboarding = new OnboardingNotifications(context);
 

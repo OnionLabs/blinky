@@ -5,15 +5,17 @@ import { DiagnosticManager } from './DiagnosticParser';
 
 /**
  * Handles uploading and executing Python scripts on a MicroPython board.
- * Output appears in the REPL terminal; errors produce diagnostics.
+ * Output streams live to the Output Channel; errors produce diagnostics.
  */
 export class ScriptRunner implements vscode.Disposable {
   private _diagnostics: DiagnosticManager;
+  private _output: vscode.OutputChannel;
   private _running = false;
   private _activeConnection: DeviceConnection | undefined;
 
-  constructor(diagnostics: DiagnosticManager) {
+  constructor(diagnostics: DiagnosticManager, output: vscode.OutputChannel) {
     this._diagnostics = diagnostics;
+    this._output = output;
   }
 
   get isRunning(): boolean {
@@ -32,8 +34,9 @@ export class ScriptRunner implements vscode.Disposable {
   /**
    * Run a local Python file on the board:
    * 1. Upload the file to the board
-   * 2. Execute it via raw REPL
-   * 3. Parse any errors into diagnostics
+   * 2. Execute it via streaming raw REPL (no timeout)
+   * 3. Stream stdout to the Output Channel in real time
+   * 4. Parse any errors into diagnostics
    */
   async runFile(
     connection: DeviceConnection,
@@ -59,26 +62,30 @@ export class ScriptRunner implements vscode.Disposable {
       await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: `Running ${fileName}…`, cancellable: true },
         async (progress, token) => {
-          // Interrupt the board if user cancels
-          token.onCancellationRequested(() => {
-            connection.interrupt().catch(() => {});
-          });
-
           // Step 1: Upload
           progress.report({ message: 'Uploading…' });
           await boardFs.writeFile(remotePath, code);
 
           if (token.isCancellationRequested) return;
 
-          // Step 2: Execute with compile() to preserve filename in tracebacks
+          // Step 2: Execute with streaming output
           progress.report({ message: 'Executing…' });
+          this._output.appendLine(`--- Running ${fileName} ---`);
+          this._output.show(true);
+
           const execCode = `exec(compile(open(${JSON.stringify(remotePath)}).read(), ${JSON.stringify(remotePath)}, 'exec'))`;
-          const result = await connection.executeRaw(execCode);
+          const result = await connection.executeRawStreaming(execCode, {
+            onStdout: (chunk) => this._output.append(chunk),
+            signal: token,
+          });
 
           // Step 3: Handle results
           if (result.stderr) {
+            this._output.appendLine(result.stderr);
             this._diagnostics.setFromStderr(result.stderr, localUri);
             vscode.window.showErrorMessage(`${fileName}: ${result.stderr.split('\n').pop()?.trim() || 'Error'}`);
+          } else {
+            this._output.appendLine(`--- ${fileName} finished ---`);
           }
         },
       );
@@ -90,7 +97,7 @@ export class ScriptRunner implements vscode.Disposable {
 
   /**
    * Execute a code snippet directly (for Run Selection).
-   * Does not upload - sends code straight to the board via raw REPL.
+   * Does not upload - sends code straight to the board via streaming raw REPL.
    */
   async runCode(
     connection: DeviceConnection,
@@ -107,9 +114,13 @@ export class ScriptRunner implements vscode.Disposable {
     this._diagnostics.clear();
 
     try {
-      const result = await connection.executeRaw(code);
+      this._output.show(true);
+      const result = await connection.executeRawStreaming(code, {
+        onStdout: (chunk) => this._output.append(chunk),
+      });
 
       if (result.stderr) {
+        this._output.appendLine(result.stderr);
         this._diagnostics.setFromStderr(result.stderr, sourceUri);
       }
     } finally {
