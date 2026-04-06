@@ -137,6 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.commands.executeCommand('setContext', 'blinky.connected', state === 'connected');
 			if (state === 'disconnected') {
 				statusBar.update('disconnected');
+				scriptRunner.cancel().catch(() => {});
 				// Auto-reconnect if we were previously connected
 				if (lastPortPath) {
 					startReconnect(lastPortPath);

@@ -12,6 +12,7 @@ export class ScriptRunner implements vscode.Disposable {
   private _output: vscode.OutputChannel;
   private _running = false;
   private _activeConnection: DeviceConnection | undefined;
+  private _cts: vscode.CancellationTokenSource | undefined;
 
   constructor(diagnostics: DiagnosticManager, output: vscode.OutputChannel) {
     this._diagnostics = diagnostics;
@@ -23,11 +24,13 @@ export class ScriptRunner implements vscode.Disposable {
   }
 
   /**
-   * Cancel the currently running script by interrupting the board.
+   * Cancel the currently running script.
+   * Works even if the board has reset or disconnected.
    */
   async cancel(): Promise<void> {
-    if (this._running && this._activeConnection?.isConnected) {
-      await this._activeConnection.interrupt();
+    this._cts?.cancel();
+    if (this._activeConnection?.isConnected) {
+      await this._activeConnection.interrupt().catch(() => {});
     }
   }
 
@@ -50,6 +53,7 @@ export class ScriptRunner implements vscode.Disposable {
 
     this._running = true;
     this._activeConnection = connection;
+    this._cts = new vscode.CancellationTokenSource();
     this._diagnostics.clear();
 
     try {
@@ -59,14 +63,21 @@ export class ScriptRunner implements vscode.Disposable {
       const fileName = localUri.fsPath.split('/').pop()!;
       const remotePath = `/${fileName}`;
 
+      const internalToken = this._cts.token;
+
       await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: `Running ${fileName}…`, cancellable: true },
         async (progress, token) => {
+          // Merge the UI cancel button with the internal cancellation
+          const merged = new vscode.CancellationTokenSource();
+          token.onCancellationRequested(() => merged.cancel());
+          internalToken.onCancellationRequested(() => merged.cancel());
+
           // Step 1: Upload
           progress.report({ message: 'Uploading…' });
           await boardFs.writeFile(remotePath, code);
 
-          if (token.isCancellationRequested) return;
+          if (merged.token.isCancellationRequested) return;
 
           // Step 2: Execute with streaming output
           progress.report({ message: 'Executing…' });
@@ -74,13 +85,25 @@ export class ScriptRunner implements vscode.Disposable {
           this._output.show(true);
 
           const execCode = `exec(compile(open(${JSON.stringify(remotePath)}).read(), ${JSON.stringify(remotePath)}, 'exec'))`;
+          let rebootDetected = false;
           const result = await connection.executeRawStreaming(execCode, {
-            onStdout: (chunk) => this._output.append(chunk),
-            signal: token,
+            onStdout: (chunk) => {
+              if (!rebootDetected && isRebootOutput(chunk)) {
+                rebootDetected = true;
+                merged.cancel();
+                return;
+              }
+              if (!rebootDetected) {
+                this._output.append(chunk);
+              }
+            },
+            signal: merged.token,
           });
 
           // Step 3: Handle results
-          if (result.stderr) {
+          if (rebootDetected) {
+            this._output.appendLine('--- Board reset detected ---');
+          } else if (result.stderr) {
             this._output.appendLine(result.stderr);
             this._diagnostics.setFromStderr(result.stderr, localUri);
             vscode.window.showErrorMessage(`${fileName}: ${result.stderr.split('\n').pop()?.trim() || 'Error'}`);
@@ -90,6 +113,8 @@ export class ScriptRunner implements vscode.Disposable {
         },
       );
     } finally {
+      this._cts?.dispose();
+      this._cts = undefined;
       this._running = false;
       this._activeConnection = undefined;
     }
@@ -111,19 +136,36 @@ export class ScriptRunner implements vscode.Disposable {
 
     this._running = true;
     this._activeConnection = connection;
+    this._cts = new vscode.CancellationTokenSource();
     this._diagnostics.clear();
 
     try {
       this._output.show(true);
+      let rebootDetected = false;
+      const cts = this._cts;
       const result = await connection.executeRawStreaming(code, {
-        onStdout: (chunk) => this._output.append(chunk),
+        onStdout: (chunk) => {
+          if (!rebootDetected && isRebootOutput(chunk)) {
+            rebootDetected = true;
+            cts.cancel();
+            return;
+          }
+          if (!rebootDetected) {
+            this._output.append(chunk);
+          }
+        },
+        signal: cts.token,
       });
 
-      if (result.stderr) {
+      if (rebootDetected) {
+        this._output.appendLine('--- Board reset detected ---');
+      } else if (result.stderr) {
         this._output.appendLine(result.stderr);
         this._diagnostics.setFromStderr(result.stderr, sourceUri);
       }
     } finally {
+      this._cts?.dispose();
+      this._cts = undefined;
       this._running = false;
       this._activeConnection = undefined;
     }
@@ -132,4 +174,12 @@ export class ScriptRunner implements vscode.Disposable {
   dispose(): void {
     this._diagnostics.dispose();
   }
+}
+
+/**
+ * Detect ESP ROM bootloader / MicroPython reboot output that indicates
+ * the board has reset while a script was running.
+ */
+function isRebootOutput(chunk: string): boolean {
+  return chunk.includes('ESP-ROM:') || chunk.includes('rst:0x');
 }
