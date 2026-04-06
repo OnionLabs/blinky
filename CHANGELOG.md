@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 - 2026-04-07
+
+### Fixed
+
+- F5 (Run File) no longer times out on scripts that take more than 5 seconds — execution now uses streaming output with no timeout
+- Script output (`print()`) streams to the Output Channel in real time instead of appearing all at once after completion
+- Pressing the board's RST button while a script is running now cleanly stops execution instead of spilling ROM boot output into the Output Channel
+- Shift+F5 (Stop Script) now reliably cancels streaming execution even when the board is unresponsive
+
 ## 0.2.0 - 2026-04-06
 
 ### Added
