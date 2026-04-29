@@ -257,31 +257,50 @@ export class EspFlasher {
 
   /**
    * Ensure the binary has execute permission (no-op on Windows).
+   * Returns null on success, or an error message describing why the
+   * binary cannot be made executable. Caller should surface it as a
+   * flash failure rather than letting spawn() report a confusing
+   * "ENOENT" / "EACCES".
    */
-  private _ensureExecutable(binaryPath: string): void {
-    if (process.platform === 'win32') return;
+  private _ensureExecutable(binaryPath: string): string | null {
+    if (process.platform === 'win32') return null;
     try {
       fs.accessSync(binaryPath, fs.constants.X_OK);
+      return null;
     } catch {
+      // If the binary isn't there at all, let spawn() surface a clear ENOENT.
+      // We only want to fail early when the file exists but we cannot make it
+      // executable (e.g. read-only mount, restrictive umask, sandboxed FS).
+      if (!fs.existsSync(binaryPath)) return null;
       try {
         fs.chmodSync(binaryPath, 0o755);
-      } catch {
-        // File may not exist yet (tests) or be on a read-only FS - proceed anyway,
-        // spawn will produce a clear error if it can't execute.
+        return null;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return `Could not make espflash executable at ${binaryPath}: ${msg}`;
       }
     }
   }
 
   /**
    * Spawn espflash and stream output.
+   *
+   * `timeoutMs` (default 5 minutes) caps the total wall-clock duration of a
+   * single operation. On timeout the process is SIGKILL'd and the promise
+   * resolves with `success: false` so callers don't hang forever on a
+   * disconnected board.
    */
   private _spawnProcess(
     command: string,
     args: string[],
     onProgress?: (progress: FlashProgress) => void,
     onOutput?: (line: string) => void,
+    timeoutMs: number = 5 * 60 * 1000,
   ): Promise<FlashResult> {
-    this._ensureExecutable(command);
+    const chmodError = this._ensureExecutable(command);
+    if (chmodError) {
+      return Promise.resolve({ success: false, output: chmodError });
+    }
 
     return new Promise((resolve) => {
       const output: string[] = [];
@@ -290,6 +309,7 @@ export class EspFlasher {
       const finish = (result: FlashResult) => {
         if (resolved) return;
         resolved = true;
+        if (timeoutHandle) clearTimeout(timeoutHandle);
         this._process = undefined;
         resolve(result);
       };
@@ -304,6 +324,18 @@ export class EspFlasher {
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { ...process.env, TERM: 'dumb' },
       });
+
+      // Hard wall-clock timeout: kill the child and fail rather than hang.
+      const proc = this._process;
+      const timeoutHandle = setTimeout(() => {
+        if (!proc.killed) {
+          try { proc.kill('SIGKILL'); } catch { /* best-effort */ }
+        }
+        finish({
+          success: false,
+          output: `${output.join('')}\n[espflash timed out after ${Math.round(timeoutMs / 1000)}s]`,
+        });
+      }, timeoutMs);
 
       const handleData = (data: Buffer) => {
         const text = data.toString();
