@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.2 - 2026-04-30
+
+### Added
+
+- Raspberry Pi Pico (RP2) board profile registered (not yet fully implemented)
+- `BoardCapabilities` expanded to support upcoming non-ESP families
+- `blinky.repl.flushDelayMs` setting to tune REPL output flush timing
+
+### Fixed
+
+- Notebook controller no longer leaks the active cancellation token source when cells overlap
+- AutoSync file watcher subscriptions are now properly disposed when auto-sync is disabled
+- `espflash` subprocess now has a 5-minute timeout and surfaces a clear error when the bundled binary cannot be made executable
+- Firmware download URLs are now validated against a strict allowlist before being constructed
+- REPL disconnect / notebook "not connected" messages now reference the Command Palette command name instead of a hardcoded keybinding
+
 ## 0.2.1 - 2026-04-07
 
 ### Fixed
