@@ -39,7 +39,7 @@ export class SerialTransport extends EventEmitter {
     super();
     this._path = options.path;
     this._baudRate = options.baudRate ?? 115200;
-    this._portFactory = options.portFactory ?? ((opts) => new SerialPort(opts));
+    this._portFactory = options.portFactory ?? ((opts) => new SerialPort(opts) as unknown as SerialPortLike);
   }
 
   get isOpen(): boolean {
