@@ -156,6 +156,23 @@ export class FirmwareCatalog {
    * @param date Date string YYYYMMDD (e.g. '20251209')
    */
   buildDownloadUrls(board: string, variant: string, version: string, date: string): string[] {
+    // Reject anything that isn't a plain identifier component to keep these
+    // values from injecting URL-control characters or path traversal segments.
+    // The values flow into a public URL we then fetch, so be conservative.
+    const SAFE = /^[A-Za-z0-9_.-]+$/;
+    if (!SAFE.test(board)) {
+      throw new Error(`Invalid board identifier: ${JSON.stringify(board)}`);
+    }
+    if (variant !== '' && !SAFE.test(variant)) {
+      throw new Error(`Invalid firmware variant: ${JSON.stringify(variant)}`);
+    }
+    if (!SAFE.test(version)) {
+      throw new Error(`Invalid firmware version: ${JSON.stringify(version)}`);
+    }
+    if (!/^\d{8}$/.test(date)) {
+      throw new Error(`Invalid firmware date (YYYYMMDD expected): ${JSON.stringify(date)}`);
+    }
+
     const variantSuffix = variant ? `-${variant}` : '';
     const base = `https://micropython.org/resources/firmware/${board}${variantSuffix}`;
 
