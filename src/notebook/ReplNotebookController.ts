@@ -57,7 +57,7 @@ export class ReplNotebookController {
       execution.replaceOutput([
         new vscode.NotebookCellOutput([
           vscode.NotebookCellOutputItem.stderr(
-            `Not connected to a board. Use the status bar or ${process.platform === 'darwin' ? 'Cmd' : 'Ctrl'}+Shift+P → blinky: Connect`,
+            'Not connected to a board. Connect via the status bar, or run "blinky: Connect" from the Command Palette.',
           ),
         ]),
       ]);
@@ -138,8 +138,12 @@ export class ReplNotebookController {
         execution.end(false, Date.now());
       }
     } finally {
-      this._activeTokenSource = undefined;
+      // Dispose first; only clear the active reference if it still points
+      // at this token source. A concurrent execute() may have replaced it.
       tokenSource.dispose();
+      if (this._activeTokenSource === tokenSource) {
+        this._activeTokenSource = undefined;
+      }
     }
   }
 }

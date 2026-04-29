@@ -2,7 +2,7 @@
   "name": "blinky-micropython",
   "displayName": "Blinky - MicroPython IDE",
   "description": "The complete MicroPython IDE - connect, code, flash, and run on ESP32 boards directly from VS Code",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "onionlabs",
   "license": "MIT",
   "repository": {
@@ -15,7 +15,7 @@
     "theme": "dark"
   },
   "engines": {
-    "vscode": "^1.96.0"
+    "vscode": "^1.118.0"
   },
   "categories": [
     "Programming Languages",
@@ -491,6 +491,13 @@
           "type": "boolean",
           "default": true,
           "description": "Persist REPL command history across sessions"
+        },
+        "blinky.repl.flushDelayMs": {
+          "type": "number",
+          "default": 50,
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "Delay (ms) before buffered REPL output is flushed when no prompt is detected. Lower = snappier echo; higher = fewer fragmented writes."
         }
       }
     },
@@ -522,18 +529,18 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^25.0.0",
-    "@types/vscode": "^1.96.0",
-    "@vitest/coverage-v8": "^4.0.0",
-    "@vscode/test-electron": "^2.4.0",
-    "@vscode/vsce": "^3.0.0",
-    "esbuild": "^0.27.0",
-    "eslint": "^10.0.0",
+    "@types/node": "^25.6.0",
+    "@types/vscode": "^1.118.0",
+    "@vitest/coverage-v8": "^4.1.5",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.9.1",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.2.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "typescript": "^6.0.0",
-    "typescript-eslint": "^8.58.0",
-    "vitest": "^4.0.0"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.1",
+    "vitest": "^4.1.5"
   },
   "dependencies": {
     "serialport": "^13.0.0"

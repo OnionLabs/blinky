@@ -20,4 +20,15 @@ export const esp8266Profile: BoardProfile = {
   platformLabels: {
     esp8266: 'ESP8266',
   },
+  capabilities: {
+    hasWiFi: true,
+    hasBLE: false,
+    hasNativeUsb: false,
+    supportsRawPaste: true,
+    flashTool: 'espflash',
+    firmwareFormat: 'bin',
+    bootloaderEntry: 'auto-rts',
+    // ESP8266 is Xtensa LX106; group with the family's xtensa label.
+    cpuArch: 'xtensa',
+  },
 };

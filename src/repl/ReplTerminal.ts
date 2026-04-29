@@ -33,7 +33,7 @@ export class ReplTerminal implements vscode.Pseudoterminal {
   readonly onDidClose: vscode.Event<number | void> = this._closeEmitter.event;
 
   private _connection: DeviceConnection;
-  private _parser = new ReplParser();
+  private _parser: ReplParser;
   private _dataHandler: ((data: Buffer) => void) | undefined;
   private _stateHandler: ((state: string) => void) | undefined;
   private _disposed = false;
@@ -45,6 +45,7 @@ export class ReplTerminal implements vscode.Pseudoterminal {
   private _currentLine = '';
   private _boardLine = '';
   private _globalState: vscode.Memento | undefined;
+  private _initialPromptTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(connection: DeviceConnection, globalState?: vscode.Memento) {
     this._connection = connection;
@@ -53,6 +54,10 @@ export class ReplTerminal implements vscode.Pseudoterminal {
     if (globalState) {
       this._history = globalState.get<string[]>('blinky.replHistory', []);
     }
+    // Apply configured deferred-flush delay
+    const flushMs = vscode.workspace.getConfiguration('blinky')
+      .get<number>('repl.flushDelayMs', 50);
+    this._parser = new ReplParser({ flushDelayMs: flushMs });
   }
 
   get currentPrompt(): PromptType {
@@ -104,6 +109,12 @@ export class ReplTerminal implements vscode.Pseudoterminal {
 
     // Listen for data from the board
     this._dataHandler = (data: Buffer) => {
+      // Real data from the board makes the synthetic-prompt fallback
+      // unnecessary; cancel it so we don't render a duplicate ">>> ".
+      if (this._initialPromptTimer) {
+        clearTimeout(this._initialPromptTimer);
+        this._initialPromptTimer = undefined;
+      }
       const text = data.toString('utf-8');
       const result = this._parser.feed(text);
 
@@ -141,9 +152,10 @@ export class ReplTerminal implements vscode.Pseudoterminal {
     // Handle disconnection - keep terminal open, show message
     this._stateHandler = (state: string) => {
       if (state === 'disconnected' || state === 'error') {
-        const shortcut = process.platform === 'darwin' ? 'Cmd+Shift+P' : 'Ctrl+Shift+P';
         this._write('\r\n\x1b[31m[Disconnected - board was reset or unplugged]\x1b[0m\r\n');
-        this._write(`\x1b[33mReconnect via the status bar or ${shortcut} → blinky: Connect\x1b[0m\r\n`);
+        this._write(
+          '\x1b[33mReconnect via the status bar, or run "blinky: Connect" from the Command Palette.\x1b[0m\r\n',
+        );
       } else if (state === 'connected') {
         this._write('\r\n\x1b[32m[Reconnected]\x1b[0m\r\n');
         // Get a clean prompt
@@ -152,8 +164,23 @@ export class ReplTerminal implements vscode.Pseudoterminal {
     };
     this._connection.on('stateChanged', this._stateHandler);
 
-    // Send a bare Enter to elicit a >>> prompt without interrupting any running script
+    // Send a bare Enter to elicit a fresh >>> from the board without
+    // interrupting any running script.
     this._sendRaw('\r');
+
+    // Fallback: if the board doesn't echo a prompt within a short window
+    // (slow firmware, weird state, no echo), render a synthetic ">>> " so
+    // the terminal isn't visually empty until the user presses Enter
+    // themselves. If a real prompt arrives later it overwrites
+    // `_currentPrompt` cleanly via the data handler.
+    this._initialPromptTimer = setTimeout(() => {
+      this._initialPromptTimer = undefined;
+      if (this._disposed) return;
+      if (this._currentPrompt === 'none') {
+        this._currentPrompt = 'normal';
+        this._writePrompt('normal');
+      }
+    }, 750);
   }
 
   /**
@@ -314,19 +341,27 @@ export class ReplTerminal implements vscode.Pseudoterminal {
       this._pauseBufferSize = 0;
       this._writeEmitter.fire(buffered);
     }
+    if (this._pauseBufferTruncated) {
+      this._pauseBufferTruncated = false;
+      this._writeEmitter.fire(`\r\n${ANSI.yellow}[output truncated while paused]${ANSI.reset}\r\n`);
+    }
   }
 
   /** Maximum bytes to buffer while paused (1 MB). Excess is discarded. */
   private static readonly MAX_PAUSE_BUFFER = 1024 * 1024;
   private _pauseBufferSize = 0;
+  private _pauseBufferTruncated = false;
 
   private _write(text: string): void {
     if (this._disposed) return;
 
     if (this._paused) {
-      if (this._pauseBufferSize < ReplTerminal.MAX_PAUSE_BUFFER) {
+      if (this._pauseBufferSize + text.length <= ReplTerminal.MAX_PAUSE_BUFFER) {
         this._pauseBuffer.push(text);
         this._pauseBufferSize += text.length;
+      } else if (!this._pauseBufferTruncated) {
+        // Mark once that we hit the cap; surface a notice on resume.
+        this._pauseBufferTruncated = true;
       }
     } else {
       this._writeEmitter.fire(text);
@@ -385,6 +420,11 @@ export class ReplTerminal implements vscode.Pseudoterminal {
   private _dispose(): void {
     if (this._disposed) return;
     this._disposed = true;
+
+    if (this._initialPromptTimer) {
+      clearTimeout(this._initialPromptTimer);
+      this._initialPromptTimer = undefined;
+    }
 
     if (this._dataHandler) {
       this._connection.removeListener('data', this._dataHandler);

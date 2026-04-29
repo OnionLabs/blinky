@@ -102,18 +102,23 @@ export class DeviceConnection extends EventEmitter {
    * Sends a harmless bare Enter and checks if `>>> ` comes back.
    * Returns true if idle, false if something appears to be running.
    * Non-destructive - does NOT interrupt running code.
+   *
+   * Serialized via the REPL mutex to avoid corrupting in-flight raw-REPL
+   * protocol state.
    */
   async probeIdle(timeoutMs: number = 3000): Promise<boolean> {
-    try {
-      await this._transport.write('\r');
-      const buf = await this._transport.readUntil(
-        (b) => b.toString('utf-8').includes('>>> '),
-        timeoutMs,
-      );
-      return buf.toString('utf-8').includes('>>> ');
-    } catch {
-      return false;
-    }
+    return this._mutex.runExclusive(async () => {
+      try {
+        await this._transport.write('\r');
+        const buf = await this._transport.readUntil(
+          (b) => b.toString('utf-8').includes('>>> '),
+          timeoutMs,
+        );
+        return buf.toString('utf-8').includes('>>> ');
+      } catch {
+        return false;
+      }
+    });
   }
 
   /**
@@ -183,6 +188,22 @@ export class DeviceConnection extends EventEmitter {
    */
   setBoardInfo(info: { platform?: string; version?: string }): void {
     this._boardInfo = { ...info };
+  }
+
+  /**
+   * Wait briefly for any in-flight raw-REPL operation to release the mutex,
+   * then dispose the transport. Pending callers will reject with a port-closed
+   * error once `_transport.close()` fires. Best-effort: gives mid-execution
+   * operations up to `timeoutMs` to settle so they don't leak listeners.
+   */
+  async disposeAsync(timeoutMs: number = 500): Promise<void> {
+    if (this._mutex.locked) {
+      await Promise.race([
+        this._mutex.runExclusive(async () => { /* drain */ }),
+        new Promise<void>((r) => setTimeout(r, timeoutMs)),
+      ]);
+    }
+    this.dispose();
   }
 
   dispose(): void {

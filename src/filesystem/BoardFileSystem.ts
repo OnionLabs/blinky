@@ -247,15 +247,35 @@ export class BoardFileSystem {
       chunks.push('');
     }
 
-    for (let i = 0; i < chunks.length; i++) {
-      const script = i === 0
-        ? SCRIPTS.putStart(path, chunks[i])
-        : SCRIPTS.putAppend(path, chunks[i]);
-      const result = await this._connection.executeRaw(script);
-      const output = result.stdout.trim();
-      if (output.startsWith('ERR:') || result.stderr) {
-        throw new Error(`write ${path}: ${output.replace('ERR:', '') || result.stderr}`);
+    // Write to a temp file first, then atomically rename. This prevents a
+    // partial / corrupt destination if the connection drops or a chunk fails.
+    const tmpPath = path + '.blnk.tmp';
+
+    try {
+      for (let i = 0; i < chunks.length; i++) {
+        const script = i === 0
+          ? SCRIPTS.putStart(tmpPath, chunks[i])
+          : SCRIPTS.putAppend(tmpPath, chunks[i]);
+        const result = await this._connection.executeRaw(script);
+        const output = result.stdout.trim();
+        if (output.startsWith('ERR:') || result.stderr) {
+          throw new Error(`write ${path}: ${output.replace('ERR:', '') || result.stderr}`);
+        }
       }
+
+      // Atomically replace destination. MicroPython's os.rename overwrites
+      // an existing file on most ports; if not, fall back to remove+rename.
+      try {
+        await this.rename(tmpPath, path);
+      } catch {
+        // Destination may already exist on ports where rename doesn't overwrite.
+        try { await this.rm(path); } catch { /* ignore */ }
+        await this.rename(tmpPath, path);
+      }
+    } catch (err) {
+      // Best-effort cleanup of the temp file so we don't leave litter.
+      try { await this.rm(tmpPath); } catch { /* ignore */ }
+      throw err;
     }
   }
 
