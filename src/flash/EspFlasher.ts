@@ -294,6 +294,12 @@ export class EspFlasher {
         resolve(result);
       };
 
+      // Defensive: if a previous spawn somehow wasn't cleaned up, kill it
+      // before starting a new one so we don't leak background processes.
+      if (this._process && !this._process.killed) {
+        try { this._process.kill('SIGTERM'); } catch { /* best-effort */ }
+      }
+
       this._process = this._spawn(command, args, {
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { ...process.env, TERM: 'dumb' },

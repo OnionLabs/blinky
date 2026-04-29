@@ -197,11 +197,8 @@ describe('RawRepl (MockBinding)', () => {
       setTimeout(() => emitData('R\x01'), 100);
       // Device aborts
       setTimeout(() => emitData('\x04'), 200);
-      // Final response
-      setTimeout(() => emitData('OK\x04error\x04>'), 400);
 
-      const result = await execPromise;
-      expect(result.stderr).toBe('error');
+      await expect(execPromise).rejects.toThrow(/aborted/i);
     });
   });
 

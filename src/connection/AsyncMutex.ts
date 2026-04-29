@@ -1,6 +1,13 @@
 /**
  * Promise-based async mutex for serializing access to the serial port.
  * Only one caller can hold the lock at a time; others queue up.
+ *
+ * Notes / limitations:
+ * - Not reentrant: a holder calling `acquire()/runExclusive()` again
+ *   from within its own critical section will deadlock.
+ * - Queue is unbounded. The expected workload (REPL ops) is low-volume,
+ *   so this is acceptable; callers should not enqueue work in tight loops
+ *   without an upstream gate.
  */
 export class AsyncMutex {
   private _queue: Array<() => void> = [];

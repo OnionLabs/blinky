@@ -6,6 +6,25 @@ const CTRL_C = '\x03'; // Interrupt
 const CTRL_D = '\x04'; // Soft reset / execute in raw REPL
 const CTRL_E = '\x05'; // Enter paste mode / raw-paste prefix
 
+/**
+ * Find the index of an "OK" marker that begins the raw-REPL response.
+ * Accepts an OK at buffer start or one preceded by CR / LF / `>` (raw prompt).
+ * Returns -1 if no acceptable OK is found.
+ */
+function findResponseOk(s: string): number {
+  let from = 0;
+  while (from <= s.length - 2) {
+    const idx = s.indexOf('OK', from);
+    if (idx === -1) return -1;
+    if (idx === 0) return idx;
+    const prev = s.charCodeAt(idx - 1);
+    // \r, \n, or '>' (raw prompt)
+    if (prev === 0x0d || prev === 0x0a || prev === 0x3e) return idx;
+    from = idx + 1;
+  }
+  return -1;
+}
+
 export interface RawReplResult {
   stdout: string;
   stderr: string;
@@ -75,9 +94,17 @@ export class RawRepl {
    */
   async exit(): Promise<void> {
     await this._transport.write(CTRL_B);
-    // Wait for the friendly REPL greeting to pass before unmuting,
-    // so it doesn't leak into the terminal
-    await this._sleep(100);
+    // Wait for the friendly prompt before unmuting so the greeting
+    // doesn't leak into the interactive terminal. Falls back to a short
+    // sleep if the prompt doesn't arrive (e.g. board mid-reset).
+    try {
+      await this._transport.readUntil(
+        (buf) => buf.toString('utf-8').includes('>>> '),
+        500,
+      );
+    } catch {
+      await this._sleep(50);
+    }
     this._transport.unmute();
   }
 
@@ -96,8 +123,7 @@ export class RawRepl {
     const response = await this._transport.readUntil(
       (buf) => {
         const s = buf.toString('utf-8');
-        // Need OK...CTRL_D...CTRL_D pattern, ending with >
-        const okIdx = s.indexOf('OK');
+        const okIdx = findResponseOk(s);
         if (okIdx === -1) return false;
         const afterOk = s.slice(okIdx + 2);
         const firstEot = afterOk.indexOf('\x04');
@@ -125,8 +151,8 @@ export class RawRepl {
     ).catch(() => null);
 
     if (!initResponse || initResponse[1] !== 0x01) {
-      // Raw-paste not supported, fall back to standard exec
-      // Need to abort: send CTRL-C and re-enter
+      // Raw-paste not supported. Abort the raw-paste attempt and fall back
+      // to standard exec (caller has already entered raw REPL mode).
       await this._transport.write(CTRL_C);
       await this._sleep(50);
       return this.exec(code);
@@ -135,6 +161,7 @@ export class RawRepl {
     // Raw-paste supported - send code in flow-controlled chunks
     const codeBytes = Buffer.from(code, 'utf-8');
     const WINDOW_SIZE = 256;
+    let aborted = false;
 
     for (let offset = 0; offset < codeBytes.length; offset += WINDOW_SIZE) {
       const chunk = codeBytes.subarray(offset, offset + WINDOW_SIZE);
@@ -148,13 +175,21 @@ export class RawRepl {
             1000,
           );
           if (fc[fc.length - 1] === 0x04) {
-            // Device signaled abort
+            // Device signaled abort: cancel the raw-paste session cleanly.
+            aborted = true;
             break;
           }
         } catch {
           // Timeout on flow control is okay - device may not send acks for every window
         }
       }
+    }
+
+    if (aborted) {
+      // Send CTRL-C to leave the raw-paste session and surface the error.
+      await this._transport.write(CTRL_C);
+      await this._sleep(50);
+      throw new Error('Device aborted raw-paste mode mid-transfer');
     }
 
     // Signal end of data
@@ -164,7 +199,7 @@ export class RawRepl {
     const response = await this._transport.readUntil(
       (buf) => {
         const s = buf.toString('utf-8');
-        const okIdx = s.indexOf('OK');
+        const okIdx = findResponseOk(s);
         if (okIdx === -1) return false;
         const afterOk = s.slice(okIdx + 2);
         const firstEot = afterOk.indexOf('\x04');
@@ -193,37 +228,50 @@ export class RawRepl {
     let okSeen = false;
     let stdoutSoFar = '';
 
+    // Streaming UTF-8 decoder so multibyte chars split across serial chunks
+    // don't produce replacement characters.
+    const decoder = new TextDecoder('utf-8', { fatal: false });
+
     const MAX_BUFFER = 10 * 1024 * 1024; // 10 MB safety limit
 
     return new Promise<RawReplResult>((resolve, reject) => {
-      // Set up cancellation: send CTRL-C to interrupt the running code.
-      // If the board doesn't respond (e.g. after a reset), force-resolve after a short timeout.
+      // settled guards against double-resolve when multiple paths
+      // (data complete, error, close, cancel timer) race to finish.
+      let settled = false;
       let cancelled = false;
       let cancelTimer: ReturnType<typeof setTimeout> | undefined;
+
+      const settle = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        fn();
+      };
+
       const onCancel = () => {
-        if (!cancelled) {
-          cancelled = true;
-          this._transport.write(CTRL_C).catch(() => {});
-          cancelTimer = setTimeout(() => {
-            cleanup();
-            resolve({ stdout: stdoutSoFar, stderr: '' });
-          }, 500);
-        }
+        if (cancelled || settled) return;
+        cancelled = true;
+        this._transport.write(CTRL_C).catch(() => {});
+        // If the board doesn't respond (e.g. it has reset), force-resolve
+        // after a short timeout with whatever output we already have.
+        cancelTimer = setTimeout(() => {
+          settle(() => resolve({ stdout: stdoutSoFar, stderr: '' }));
+        }, 500);
       };
       const cancelDisposable = options.signal?.onCancellationRequested(onCancel);
 
       const onData = (data: Buffer) => {
-        accumulated += data.toString('utf-8');
+        if (settled) return;
+        accumulated += decoder.decode(data, { stream: true });
 
         if (accumulated.length + stdoutSoFar.length > MAX_BUFFER) {
-          cleanup();
-          reject(new Error('Output exceeded 10 MB limit'));
+          settle(() => reject(new Error('Output exceeded 10 MB limit')));
           return;
         }
 
         // Wait for initial "OK" before streaming stdout
         if (!okSeen) {
-          const okIdx = accumulated.indexOf('OK');
+          const okIdx = findResponseOk(accumulated);
           if (okIdx === -1) return;
           okSeen = true;
           accumulated = accumulated.slice(okIdx + 2);
@@ -241,8 +289,7 @@ export class RawRepl {
             }
             stdoutSoFar += lastStdout;
             const stderr = accumulated.slice(firstEot + 1, secondEot);
-            cleanup();
-            resolve({ stdout: stdoutSoFar, stderr });
+            settle(() => resolve({ stdout: stdoutSoFar, stderr }));
             return;
           }
         }
@@ -258,17 +305,18 @@ export class RawRepl {
       };
 
       const onError = (err: Error) => {
-        cleanup();
-        reject(err);
+        settle(() => reject(err));
       };
 
       const onClose = () => {
-        cleanup();
-        reject(new Error('Port closed during execution'));
+        settle(() => reject(new Error('Port closed during execution')));
       };
 
       const cleanup = () => {
-        if (cancelTimer) clearTimeout(cancelTimer);
+        if (cancelTimer) {
+          clearTimeout(cancelTimer);
+          cancelTimer = undefined;
+        }
         cancelDisposable?.dispose();
         this._transport.removeListener('_rawData', onData);
         this._transport.removeListener('error', onError);
@@ -304,7 +352,7 @@ export class RawRepl {
    * Parse the response from a raw REPL exec: "OK<stdout>\x04<stderr>\x04>"
    */
   private _parseExecResponse(raw: string): RawReplResult {
-    const okIdx = raw.indexOf('OK');
+    const okIdx = findResponseOk(raw);
     if (okIdx === -1) {
       return { stdout: '', stderr: raw };
     }

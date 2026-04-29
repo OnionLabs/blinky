@@ -33,7 +33,7 @@ export class ReplTerminal implements vscode.Pseudoterminal {
   readonly onDidClose: vscode.Event<number | void> = this._closeEmitter.event;
 
   private _connection: DeviceConnection;
-  private _parser = new ReplParser();
+  private _parser: ReplParser;
   private _dataHandler: ((data: Buffer) => void) | undefined;
   private _stateHandler: ((state: string) => void) | undefined;
   private _disposed = false;
@@ -53,6 +53,10 @@ export class ReplTerminal implements vscode.Pseudoterminal {
     if (globalState) {
       this._history = globalState.get<string[]>('blinky.replHistory', []);
     }
+    // Apply configured deferred-flush delay
+    const flushMs = vscode.workspace.getConfiguration('blinky')
+      .get<number>('repl.flushDelayMs', 50);
+    this._parser = new ReplParser({ flushDelayMs: flushMs });
   }
 
   get currentPrompt(): PromptType {
@@ -314,19 +318,27 @@ export class ReplTerminal implements vscode.Pseudoterminal {
       this._pauseBufferSize = 0;
       this._writeEmitter.fire(buffered);
     }
+    if (this._pauseBufferTruncated) {
+      this._pauseBufferTruncated = false;
+      this._writeEmitter.fire(`\r\n${ANSI.yellow}[output truncated while paused]${ANSI.reset}\r\n`);
+    }
   }
 
   /** Maximum bytes to buffer while paused (1 MB). Excess is discarded. */
   private static readonly MAX_PAUSE_BUFFER = 1024 * 1024;
   private _pauseBufferSize = 0;
+  private _pauseBufferTruncated = false;
 
   private _write(text: string): void {
     if (this._disposed) return;
 
     if (this._paused) {
-      if (this._pauseBufferSize < ReplTerminal.MAX_PAUSE_BUFFER) {
+      if (this._pauseBufferSize + text.length <= ReplTerminal.MAX_PAUSE_BUFFER) {
         this._pauseBuffer.push(text);
         this._pauseBufferSize += text.length;
+      } else if (!this._pauseBufferTruncated) {
+        // Mark once that we hit the cap; surface a notice on resume.
+        this._pauseBufferTruncated = true;
       }
     } else {
       this._writeEmitter.fire(text);

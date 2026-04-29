@@ -33,12 +33,15 @@ let lastPortPath: string | undefined;
 /** Registered board profiles - ESP32 ships built-in, others can be added. */
 const boardProfiles: BoardProfile[] = [esp32Profile, esp8266Profile];
 
-const portDiscovery = new PortDiscovery(boardProfiles);
+let portDiscovery: PortDiscovery;
 const boardDetector = new BoardDetector(boardProfiles);
 
 export function activate(context: vscode.ExtensionContext) {
 	const outputChannel = vscode.window.createOutputChannel('blinky');
 	outputChannel.appendLine('blinky activated');
+
+	// Wire enumeration errors (eg. missing udev rules) into the output channel.
+	portDiscovery = new PortDiscovery(boardProfiles, undefined, (msg) => outputChannel.appendLine(msg));
 
 	const statusBar = new StatusBar();
 	const autoSync = new AutoSync(() => boardFs, () => connection, outputChannel, () => fileTreeProvider.refresh());
@@ -137,7 +140,12 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.commands.executeCommand('setContext', 'blinky.connected', state === 'connected');
 			if (state === 'disconnected') {
 				statusBar.update('disconnected');
-				scriptRunner.cancel().catch(() => {});
+				// Cancel any running script; race against a short timeout so we
+				// don't block reconnect logic if the board never settles.
+				Promise.race([
+					scriptRunner.cancel(),
+					new Promise((r) => setTimeout(r, 500)),
+				]).catch(() => { /* ignore */ });
 				// Auto-reconnect if we were previously connected
 				if (lastPortPath) {
 					startReconnect(lastPortPath);
@@ -183,10 +191,11 @@ export function activate(context: vscode.ExtensionContext) {
 					outputChannel.appendLine(`Connected to ${info.label} on ${portPath}`);
 					// Cache board info for next time
 					context.globalState.update('blinky.boardInfo', { platform: info.platform, version: info.version });
-				} catch {
+				} catch (err) {
 					// Detection failed but connection is up
+					const msg = err instanceof Error ? err.message : String(err);
 					statusBar.update('connected');
-					outputChannel.appendLine(`Connected to ${portPath} (board detection failed)`);
+					outputChannel.appendLine(`Connected to ${portPath} (board detection failed: ${msg})`);
 				}
 			} else {
 				statusBar.update('connected', connection.boardInfo.platform
@@ -237,7 +246,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 		replTerminal = createReplTerminal(connection, context.globalState);
 
-		// Track terminal closure - self-disposing listener
+		// Track terminal closure - self-disposing listener.
+		// Also tracked in context.subscriptions so it's cleaned up on extension unload.
 		let closeListener: vscode.Disposable | undefined;
 		closeListener = vscode.window.onDidCloseTerminal((t) => {
 			if (t === replTerminal) {
@@ -245,6 +255,9 @@ export function activate(context: vscode.ExtensionContext) {
 				closeListener?.dispose();
 				closeListener = undefined;
 			}
+		});
+		context.subscriptions.push({
+			dispose: () => closeListener?.dispose(),
 		});
 	};
 

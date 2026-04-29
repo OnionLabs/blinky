@@ -28,6 +28,18 @@ export class ReplParser {
   private _buffer = '';
   private _flushTimer: ReturnType<typeof setTimeout> | undefined;
   private _onFlush: ((output: string) => void) | undefined;
+  private _flushDelayMs: number;
+
+  constructor(options: { flushDelayMs?: number } = {}) {
+    this._flushDelayMs = options.flushDelayMs ?? 50;
+  }
+
+  /** Override the deferred-flush delay at runtime. */
+  setFlushDelay(ms: number): void {
+    if (Number.isFinite(ms) && ms >= 0) {
+      this._flushDelayMs = ms;
+    }
+  }
 
   /**
    * Set a callback for deferred flushes (when buffered data
@@ -86,7 +98,7 @@ export class ReplParser {
           this._buffer = '';
           this._onFlush(output);
         }
-      }, 50);
+      }, this._flushDelayMs);
     }
 
     return { prompt: 'none', output: '' };

@@ -70,45 +70,58 @@ export class ScriptRunner implements vscode.Disposable {
         async (progress, token) => {
           // Merge the UI cancel button with the internal cancellation
           const merged = new vscode.CancellationTokenSource();
-          token.onCancellationRequested(() => merged.cancel());
-          internalToken.onCancellationRequested(() => merged.cancel());
+          const uiSub = token.onCancellationRequested(() => merged.cancel());
+          const internalSub = internalToken.onCancellationRequested(() => merged.cancel());
+          try {
+            // Step 1: Upload
+            progress.report({ message: 'Uploading…' });
+            await boardFs.writeFile(remotePath, code);
 
-          // Step 1: Upload
-          progress.report({ message: 'Uploading…' });
-          await boardFs.writeFile(remotePath, code);
+            if (merged.token.isCancellationRequested) return;
 
-          if (merged.token.isCancellationRequested) return;
+            // Step 2: Execute with streaming output. We pass the path through
+            // a base64-decoded variable rather than embedding it as a string
+            // literal so paths containing quotes/newlines can't break parsing
+            // or be exploited as a Python-injection vector.
+            progress.report({ message: 'Executing…' });
+            this._output.appendLine(`--- Running ${fileName} ---`);
+            this._output.show(true);
 
-          // Step 2: Execute with streaming output
-          progress.report({ message: 'Executing…' });
-          this._output.appendLine(`--- Running ${fileName} ---`);
-          this._output.show(true);
+            const pathB64 = Buffer.from(remotePath, 'utf-8').toString('base64');
+            const execCode =
+              `import ubinascii\n` +
+              `__p=ubinascii.a2b_base64(${JSON.stringify(pathB64)}).decode()\n` +
+              `exec(compile(open(__p).read(), __p, 'exec'))\n` +
+              `del __p`;
+            let rebootDetected = false;
+            const result = await connection.executeRawStreaming(execCode, {
+              onStdout: (chunk) => {
+                if (!rebootDetected && isRebootOutput(chunk)) {
+                  rebootDetected = true;
+                  merged.cancel();
+                  return;
+                }
+                if (!rebootDetected) {
+                  this._output.append(chunk);
+                }
+              },
+              signal: merged.token,
+            });
 
-          const execCode = `exec(compile(open(${JSON.stringify(remotePath)}).read(), ${JSON.stringify(remotePath)}, 'exec'))`;
-          let rebootDetected = false;
-          const result = await connection.executeRawStreaming(execCode, {
-            onStdout: (chunk) => {
-              if (!rebootDetected && isRebootOutput(chunk)) {
-                rebootDetected = true;
-                merged.cancel();
-                return;
-              }
-              if (!rebootDetected) {
-                this._output.append(chunk);
-              }
-            },
-            signal: merged.token,
-          });
-
-          // Step 3: Handle results
-          if (rebootDetected) {
-            this._output.appendLine('--- Board reset detected ---');
-          } else if (result.stderr) {
-            this._output.appendLine(result.stderr);
-            this._diagnostics.setFromStderr(result.stderr, localUri);
-            vscode.window.showErrorMessage(`${fileName}: ${result.stderr.split('\n').pop()?.trim() || 'Error'}`);
-          } else {
-            this._output.appendLine(`--- ${fileName} finished ---`);
+            // Step 3: Handle results
+            if (rebootDetected) {
+              this._output.appendLine('--- Board reset detected ---');
+            } else if (result.stderr) {
+              this._output.appendLine(result.stderr);
+              this._diagnostics.setFromStderr(result.stderr, localUri);
+              vscode.window.showErrorMessage(`${fileName}: ${result.stderr.split('\n').pop()?.trim() || 'Error'}`);
+            } else {
+              this._output.appendLine(`--- ${fileName} finished ---`);
+            }
+          } finally {
+            uiSub.dispose();
+            internalSub.dispose();
+            merged.dispose();
           }
         },
       );
@@ -179,7 +192,10 @@ export class ScriptRunner implements vscode.Disposable {
 /**
  * Detect ESP ROM bootloader / MicroPython reboot output that indicates
  * the board has reset while a script was running.
+ *
+ * Anchored to start-of-line so user scripts that print these literal
+ * strings (e.g. `print("ESP-ROM: foo")`) don't trigger a false positive.
  */
 function isRebootOutput(chunk: string): boolean {
-  return chunk.includes('ESP-ROM:') || chunk.includes('rst:0x');
+  return /(^|\r|\n)(ESP-ROM:|rst:0x|Build:|MicroPython v\d)/.test(chunk);
 }

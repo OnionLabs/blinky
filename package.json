@@ -491,6 +491,13 @@
           "type": "boolean",
           "default": true,
           "description": "Persist REPL command history across sessions"
+        },
+        "blinky.repl.flushDelayMs": {
+          "type": "number",
+          "default": 50,
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "Delay (ms) before buffered REPL output is flushed when no prompt is detected. Lower = snappier echo; higher = fewer fragmented writes."
         }
       }
     },

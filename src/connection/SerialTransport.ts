@@ -1,9 +1,18 @@
 import { EventEmitter } from 'events';
 import { SerialPort } from 'serialport';
 
-/** Any SerialPort-like stream (real or mock) */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type SerialPortLike = SerialPort | InstanceType<any>;
+/** Minimal subset of node-serialport we depend on. Mocks must implement this. */
+export interface SerialPortLike {
+  isOpen: boolean;
+  open(cb: (err: Error | null) => void): void;
+  close(cb?: (err: Error | null) => void): void;
+  write(data: Buffer | string, cb: (err: Error | null) => void): void;
+  drain(cb: (err: Error | null) => void): void;
+  set(options: { dtr?: boolean; rts?: boolean }, cb: (err: Error | null) => void): void;
+  on(event: 'data', listener: (data: Buffer) => void): void;
+  on(event: 'error', listener: (err: Error) => void): void;
+  on(event: 'close', listener: () => void): void;
+}
 
 export type PortFactory = (options: { path: string; baudRate: number; autoOpen: false }) => SerialPortLike;
 
@@ -24,6 +33,7 @@ export class SerialTransport extends EventEmitter {
   private _baudRate: number;
   private _portFactory: PortFactory;
   private _muted = false;
+  private _opening: Promise<void> | null = null;
 
   constructor(options: SerialTransportOptions) {
     super();
@@ -48,8 +58,12 @@ export class SerialTransport extends EventEmitter {
     if (this._port?.isOpen) {
       return;
     }
+    // Coalesce concurrent open() calls onto a single in-flight promise
+    if (this._opening) {
+      return this._opening;
+    }
 
-    return new Promise<void>((resolve, reject) => {
+    this._opening = new Promise<void>((resolve, reject) => {
       this._port = this._portFactory(
         { path: this._path, baudRate: this._baudRate, autoOpen: false as const },
       );
@@ -68,13 +82,22 @@ export class SerialTransport extends EventEmitter {
       this._port.open((err: Error | null) => {
         if (err) {
           reject(err);
-        } else {
-          // Lower DTR after open to avoid triggering the ESP32 auto-reset
-          // circuit (DTR is wired to EN/RST through a capacitor on most devkits).
-          this._port!.set({ dtr: false, rts: false }, () => resolve());
+          return;
         }
+        // Lower DTR after open to avoid triggering the ESP32 auto-reset
+        // circuit (DTR is wired to EN/RST through a capacitor on most devkits).
+        this._port!.set({ dtr: false, rts: false }, (setErr: Error | null) => {
+          if (setErr) reject(setErr);
+          else resolve();
+        });
       });
     });
+
+    try {
+      await this._opening;
+    } finally {
+      this._opening = null;
+    }
   }
 
   async close(): Promise<void> {

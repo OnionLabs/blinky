@@ -15,6 +15,9 @@ export interface DiscoveredPort {
 
 export type PortListFn = () => Promise<PortInfo[]>;
 
+/** Optional logger for surfacing port-enumeration failures (eg. missing udev rules). */
+export type PortDiscoveryLogger = (message: string) => void;
+
 /**
  * Enumerates serial ports and identifies known boards by VID/PID
  * using registered board profiles.
@@ -22,10 +25,12 @@ export type PortListFn = () => Promise<PortInfo[]>;
 export class PortDiscovery {
   private _listFn: PortListFn;
   private _profiles: BoardProfile[];
+  private _logger: PortDiscoveryLogger | undefined;
 
-  constructor(profiles: BoardProfile[], listFn?: PortListFn) {
+  constructor(profiles: BoardProfile[], listFn?: PortListFn, logger?: PortDiscoveryLogger) {
     this._profiles = profiles;
     this._listFn = listFn ?? (() => SerialPort.list());
+    this._logger = logger;
   }
 
   /**
@@ -35,8 +40,11 @@ export class PortDiscovery {
     let ports;
     try {
       ports = await this._listFn();
-    } catch {
-      // SerialPort.list() fails when udev or OS serial subsystem is unavailable
+    } catch (err) {
+      // SerialPort.list() fails when udev or OS serial subsystem is unavailable.
+      // Surface via logger when supplied so users can see why no ports show up.
+      const msg = err instanceof Error ? err.message : String(err);
+      this._logger?.(`Port enumeration failed: ${msg}`);
       return [];
     }
 
