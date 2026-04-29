@@ -70,9 +70,13 @@ export class AutoSync implements vscode.Disposable {
       new vscode.RelativePattern(folders[0], '**/*'),
     );
 
-    this._watcher.onDidChange((uri) => this._enqueue(uri, folders[0], 'save'));
-    this._watcher.onDidCreate((uri) => this._enqueue(uri, folders[0], 'save'));
-    this._watcher.onDidDelete((uri) => this._enqueue(uri, folders[0], 'delete'));
+    // Track watcher event subscriptions so they're explicitly cleaned
+    // up on disable() rather than relying on watcher.dispose() to cascade.
+    this._disposables.push(
+      this._watcher.onDidChange((uri) => this._enqueue(uri, folders[0], 'save')),
+      this._watcher.onDidCreate((uri) => this._enqueue(uri, folders[0], 'save')),
+      this._watcher.onDidDelete((uri) => this._enqueue(uri, folders[0], 'delete')),
+    );
 
     const saveListener = vscode.workspace.onDidSaveTextDocument((doc) => {
       if (doc.uri.scheme === 'file' && folders[0]) {

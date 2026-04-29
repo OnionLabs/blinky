@@ -33,4 +33,16 @@ export const esp32Profile: BoardProfile = {
     esp32c6: 'ESP32-C6',
     esp32h2: 'ESP32-H2',
   },
+  capabilities: {
+    hasWiFi: true,
+    hasBLE: true,
+    supportsRawPaste: true,
+    flashTool: 'espflash',
+    firmwareFormat: 'bin',
+    bootloaderEntry: 'auto-rts',
+    // hasNativeUsb and cpuArch are NOT set here because the esp32 family
+    // is heterogeneous: original ESP32 = xtensa + UART bridge, S2/S3 =
+    // xtensa + native USB, C3/C6/H2 = risc-v + native USB. Detect at runtime
+    // from sys.platform and override per-chip.
+  },
 };

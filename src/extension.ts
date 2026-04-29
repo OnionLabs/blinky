@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { BoardDetector } from './board/BoardDetector';
 import { BoardProfile } from './board/BoardProfile';
-import { esp32Profile, esp8266Profile } from './board/profiles';
+import { esp32Profile, esp8266Profile, rp2Profile } from './board/profiles';
 import { DeviceConnection } from './connection/DeviceConnection';
 import { PortDiscovery } from './connection/PortDiscovery';
 import { AutoSync } from './filesystem/AutoSync';
@@ -31,7 +31,7 @@ let reconnectTimer: ReturnType<typeof setInterval> | undefined;
 let lastPortPath: string | undefined;
 
 /** Registered board profiles - ESP32 ships built-in, others can be added. */
-const boardProfiles: BoardProfile[] = [esp32Profile, esp8266Profile];
+const boardProfiles: BoardProfile[] = [esp32Profile, esp8266Profile, rp2Profile];
 
 let portDiscovery: PortDiscovery;
 const boardDetector = new BoardDetector(boardProfiles);
