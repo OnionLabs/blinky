@@ -20,6 +20,9 @@ export class AutoSync implements vscode.Disposable {
   private _disposables: vscode.Disposable[] = [];
   private _uploading = false;
   private _onDidUpload: (() => void) | undefined;
+  /** Coalesces rapid events: latest action per relative path wins. */
+  private _pending = new Map<string, { kind: 'save' | 'delete'; uri: vscode.Uri; folder: vscode.WorkspaceFolder }>();
+  private _draining = false;
 
   constructor(
     getFs: () => BoardFileSystem | undefined,
@@ -67,13 +70,13 @@ export class AutoSync implements vscode.Disposable {
       new vscode.RelativePattern(folders[0], '**/*'),
     );
 
-    this._watcher.onDidChange((uri) => this._onFileSaved(uri, folders[0]));
-    this._watcher.onDidCreate((uri) => this._onFileSaved(uri, folders[0]));
-    this._watcher.onDidDelete((uri) => this._onFileDeleted(uri, folders[0]));
+    this._watcher.onDidChange((uri) => this._enqueue(uri, folders[0], 'save'));
+    this._watcher.onDidCreate((uri) => this._enqueue(uri, folders[0], 'save'));
+    this._watcher.onDidDelete((uri) => this._enqueue(uri, folders[0], 'delete'));
 
     const saveListener = vscode.workspace.onDidSaveTextDocument((doc) => {
       if (doc.uri.scheme === 'file' && folders[0]) {
-        this._onFileSaved(doc.uri, folders[0]);
+        this._enqueue(doc.uri, folders[0], 'save');
       }
     });
     this._disposables.push(saveListener);
@@ -102,11 +105,54 @@ export class AutoSync implements vscode.Disposable {
     this.disable();
   }
 
+  /**
+   * Enqueue a save/delete; rapid events for the same path are coalesced
+   * (latest action wins) so a flurry of saves becomes a single upload.
+   */
+  private _enqueue(
+    uri: vscode.Uri,
+    folder: vscode.WorkspaceFolder,
+    kind: 'save' | 'delete',
+  ): void {
+    if (!this._enabled) return;
+    const relativePath = path.relative(folder.uri.fsPath, uri.fsPath);
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) return;
+    if (this._isExcluded(relativePath)) return;
+
+    this._pending.set(relativePath, { kind, uri, folder });
+    void this._drain();
+  }
+
+  private async _drain(): Promise<void> {
+    if (this._draining) return;
+    this._draining = true;
+    try {
+      while (this._enabled && this._pending.size > 0) {
+        const [relativePath, entry] = this._pending.entries().next().value!;
+        this._pending.delete(relativePath);
+        try {
+          if (entry.kind === 'save') {
+            await this._onFileSaved(entry.uri, entry.folder);
+          } else {
+            await this._onFileDeleted(entry.uri, entry.folder);
+          }
+        } catch (err) {
+          // Per-entry handlers already log; ensure the loop never aborts.
+          const msg = err instanceof Error ? err.message : String(err);
+          this._outputChannel.appendLine(`Auto-sync internal error for ${relativePath}: ${msg}`);
+        }
+      }
+    } finally {
+      this._draining = false;
+    }
+  }
+
   private async _onFileSaved(
     uri: vscode.Uri,
     folder: vscode.WorkspaceFolder,
   ): Promise<void> {
-    if (!this._enabled || this._uploading) return;
+    if (!this._enabled) return;
+    if (this._uploading) return;
 
     const relativePath = path.relative(folder.uri.fsPath, uri.fsPath);
     if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) return;
@@ -115,14 +161,10 @@ export class AutoSync implements vscode.Disposable {
     const conn = this._getConnection();
     if (!conn?.isConnected) return;
 
-    // Set uploading early to prevent concurrent handlers from slipping through
-    this._uploading = true;
-
     if (conn.isBusy) {
       this._outputChannel.appendLine(
         `Auto-sync: skipped ${relativePath} (board busy with another operation)`,
       );
-      this._uploading = false;
       return;
     }
 
@@ -134,21 +176,16 @@ export class AutoSync implements vscode.Disposable {
         'Interrupt & Upload',
         'Skip',
       );
-      if (choice !== 'Interrupt & Upload') {
-        this._uploading = false;
-        return;
-      }
+      if (choice !== 'Interrupt & Upload') return;
       await conn.writeRaw('\x03');
       await new Promise((r) => setTimeout(r, 300));
     }
 
     const remotePath = '/' + relativePath.split(path.sep).join('/');
     const boardFs = this._getFs();
-    if (!boardFs) {
-      this._uploading = false;
-      return;
-    }
+    if (!boardFs) return;
 
+    this._uploading = true;
     try {
       // Ensure parent directories exist on the board
       const parts = remotePath.split('/').filter(Boolean);
@@ -180,7 +217,7 @@ export class AutoSync implements vscode.Disposable {
     uri: vscode.Uri,
     folder: vscode.WorkspaceFolder,
   ): Promise<void> {
-    if (!this._enabled || this._uploading) return;
+    if (!this._enabled) return;
 
     const relativePath = path.relative(folder.uri.fsPath, uri.fsPath);
     if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) return;
@@ -189,14 +226,10 @@ export class AutoSync implements vscode.Disposable {
     const conn = this._getConnection();
     if (!conn?.isConnected) return;
 
-    // Set uploading early to prevent concurrent handlers
-    this._uploading = true;
-
     if (conn.isBusy) {
       this._outputChannel.appendLine(
         `Auto-sync: skipped delete ${relativePath} (board busy)`,
       );
-      this._uploading = false;
       return;
     }
 
@@ -207,20 +240,14 @@ export class AutoSync implements vscode.Disposable {
         'Interrupt & Delete',
         'Skip',
       );
-      if (choice !== 'Interrupt & Delete') {
-        this._uploading = false;
-        return;
-      }
+      if (choice !== 'Interrupt & Delete') return;
       await conn.writeRaw('\x03');
       await new Promise((r) => setTimeout(r, 300));
     }
 
     const remotePath = '/' + relativePath.split(path.sep).join('/');
     const boardFs = this._getFs();
-    if (!boardFs) {
-      this._uploading = false;
-      return;
-    }
+    if (!boardFs) return;
 
     try {
       // Try file removal first; if it fails, try directory removal
@@ -234,8 +261,6 @@ export class AutoSync implements vscode.Disposable {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this._outputChannel.appendLine(`Auto-sync delete error: ${relativePath} - ${msg}`);
-    } finally {
-      this._uploading = false;
     }
   }
 

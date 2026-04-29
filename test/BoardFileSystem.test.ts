@@ -1,5 +1,5 @@
 import { SerialPortMock } from 'serialport';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DeviceConnection } from '../src/connection/DeviceConnection';
 import { BoardFileEntry, BoardFileSystem } from '../src/filesystem/BoardFileSystem';
 
@@ -132,17 +132,26 @@ describe('BoardFileSystem', () => {
 
   describe('writeFile()', () => {
     it('succeeds on OK response', async () => {
-      const promise = fs.writeFile('/test.py', 'print(1)\n');
-      simulateRawRepl(getPort(), 'OK');
+      // Atomic write performs (write to tmp) + (rename tmp -> final),
+      // so two raw REPL operations need to succeed. Stub executeRaw
+      // directly to keep the test focused on writeFile semantics.
+      const stub = vi.fn().mockResolvedValue({ stdout: 'OK\n', stderr: '' });
+      (fs as any)._connection = { executeRaw: stub } as any;
 
-      await expect(promise).resolves.toBeUndefined();
+      await expect(fs.writeFile('/test.py', 'print(1)\n')).resolves.toBeUndefined();
+      // 1 putStart + 1 rename
+      expect(stub).toHaveBeenCalledTimes(2);
     });
 
     it('throws on error response', async () => {
-      const promise = fs.writeFile('/readonly.py', 'x');
-      simulateRawRepl(getPort(), 'ERR:EACCES');
+      const stub = vi.fn()
+        // putStart fails
+        .mockResolvedValueOnce({ stdout: 'ERR:EACCES\n', stderr: '' })
+        // tmp cleanup attempt
+        .mockResolvedValueOnce({ stdout: 'OK\n', stderr: '' });
+      (fs as any)._connection = { executeRaw: stub } as any;
 
-      await expect(promise).rejects.toThrow('EACCES');
+      await expect(fs.writeFile('/readonly.py', 'x')).rejects.toThrow('EACCES');
     });
   });
 

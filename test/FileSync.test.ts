@@ -262,7 +262,9 @@ describe('FileSync', () => {
 
       // mkdir returns OK
       mock.executeRaw.mockResolvedValueOnce({ stdout: 'OK\n', stderr: '' });
-      // writeFile (putStart) returns OK
+      // writeFile (putStart to tmp) returns OK
+      mock.executeRaw.mockResolvedValueOnce({ stdout: 'OK\n', stderr: '' });
+      // writeFile (rename tmp -> final) returns OK
       mock.executeRaw.mockResolvedValueOnce({ stdout: 'OK\n', stderr: '' });
 
       const plan = {

@@ -43,6 +43,14 @@ export class FileTreeProvider implements vscode.TreeDataProvider<BoardFileEntry>
   }
 
   getTreeItem(element: BoardFileEntry): vscode.TreeItem {
+    // Special-case error placeholder produced by getChildren() on failure.
+    if (element.path === '__blinky_error__') {
+      const item = new vscode.TreeItem(element.name, vscode.TreeItemCollapsibleState.None);
+      item.iconPath = new vscode.ThemeIcon('warning');
+      item.tooltip = element.name;
+      return item;
+    }
+
     const item = new vscode.TreeItem(
       element.name,
       element.isDir
@@ -83,9 +91,19 @@ export class FileTreeProvider implements vscode.TreeDataProvider<BoardFileEntry>
       });
       this._cache.set(dir, sorted);
       return sorted;
-    } catch {
-      // Return cached results instead of empty to avoid flickering
-      return this._cache.get(dir) ?? [];
+    } catch (err) {
+      // Surface the error inline so the user sees that the listing is stale.
+      // Cached entries are still preferred when present so the UI doesn't
+      // collapse, but we always surface a marker row.
+      const cached = this._cache.get(dir) ?? [];
+      const msg = err instanceof Error ? err.message : String(err);
+      const errorNode: BoardFileEntry = {
+        name: `⚠ Could not read ${dir}: ${msg.split('\n')[0]}`,
+        path: '__blinky_error__',
+        isDir: false,
+        size: 0,
+      };
+      return cached.length > 0 ? [errorNode, ...cached] : [errorNode];
     }
   }
 

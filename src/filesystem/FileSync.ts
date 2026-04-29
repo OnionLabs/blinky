@@ -177,7 +177,11 @@ export class FileSync {
         const remoteHash = boardFileMap.get(remotePath);
         const localHash = await this.hashLocal(local.uri);
 
-        if (!remoteHash || localHash !== remoteHash) {
+        if (remoteHash === null) {
+          // Board couldn't hash the file (eg. unreadable, transient FS error).
+          // Treat as needing upload but mark as 'changed' for visibility.
+          upload.push({ localUri: local.uri, remotePath, reason: 'changed' });
+        } else if (localHash !== remoteHash) {
           upload.push({ localUri: local.uri, remotePath, reason: 'changed' });
         } else {
           unchanged.push(remotePath);

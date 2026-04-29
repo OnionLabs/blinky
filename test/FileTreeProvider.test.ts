@@ -48,14 +48,16 @@ describe('FileTreeProvider', () => {
     provider.dispose();
   });
 
-  it('returns empty on ls error', async () => {
+  it('returns error placeholder on ls error', async () => {
     const provider = new FileTreeProvider();
     const mockFs = createMockFs();
     mockFs.ls.mockRejectedValue(new Error('fail'));
     provider.setFileSystem(mockFs);
 
     const children = await provider.getChildren();
-    expect(children).toEqual([]);
+    expect(children).toHaveLength(1);
+    expect(children[0].path).toBe('__blinky_error__');
+    expect(children[0].name).toContain('fail');
     provider.dispose();
   });
 
