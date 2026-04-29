@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.3 - 2026-04-30
+
+### Added
+
+- Bundled `espflash` upgraded from 3.3.0 to 4.4.0 — adds ESP32-C61 support, faster flashing throughput, Windows reset/sync fixes (esptool-aligned RTS/DTR), fix for `espflash flash` getting stuck on `Sync`, and corrected ESP32-C5 crystal-frequency reporting in `board-info`
+
+### Internal
+
+- Release workflow now downloads official `espflash` release binaries instead of building from source, dropping the Rust toolchain and Linux libudev/cross-compile setup from CI
+
 ## 0.2.2 - 2026-04-30
 
 ### Added
@@ -15,6 +25,8 @@
 - `espflash` subprocess now has a 5-minute timeout and surfaces a clear error when the bundled binary cannot be made executable
 - Firmware download URLs are now validated against a strict allowlist before being constructed
 - REPL disconnect / notebook "not connected" messages now reference the Command Palette command name instead of a hardcoded keybinding
+- REPL terminal now always shows a `>>> ` prompt on open: if the board does not echo a prompt within 750 ms (slow firmware, mid-script state, no echo), a synthetic prompt is rendered so users no longer have to press Enter manually to wake the terminal
+- VS Code engine floor raised to `^1.118.0` and `@types/vscode` updated to match
 
 ## 0.2.1 - 2026-04-07
 
