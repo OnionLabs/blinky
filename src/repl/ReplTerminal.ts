@@ -45,6 +45,7 @@ export class ReplTerminal implements vscode.Pseudoterminal {
   private _currentLine = '';
   private _boardLine = '';
   private _globalState: vscode.Memento | undefined;
+  private _initialPromptTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(connection: DeviceConnection, globalState?: vscode.Memento) {
     this._connection = connection;
@@ -108,6 +109,12 @@ export class ReplTerminal implements vscode.Pseudoterminal {
 
     // Listen for data from the board
     this._dataHandler = (data: Buffer) => {
+      // Real data from the board makes the synthetic-prompt fallback
+      // unnecessary; cancel it so we don't render a duplicate ">>> ".
+      if (this._initialPromptTimer) {
+        clearTimeout(this._initialPromptTimer);
+        this._initialPromptTimer = undefined;
+      }
       const text = data.toString('utf-8');
       const result = this._parser.feed(text);
 
@@ -157,8 +164,23 @@ export class ReplTerminal implements vscode.Pseudoterminal {
     };
     this._connection.on('stateChanged', this._stateHandler);
 
-    // Send a bare Enter to elicit a >>> prompt without interrupting any running script
+    // Send a bare Enter to elicit a fresh >>> from the board without
+    // interrupting any running script.
     this._sendRaw('\r');
+
+    // Fallback: if the board doesn't echo a prompt within a short window
+    // (slow firmware, weird state, no echo), render a synthetic ">>> " so
+    // the terminal isn't visually empty until the user presses Enter
+    // themselves. If a real prompt arrives later it overwrites
+    // `_currentPrompt` cleanly via the data handler.
+    this._initialPromptTimer = setTimeout(() => {
+      this._initialPromptTimer = undefined;
+      if (this._disposed) return;
+      if (this._currentPrompt === 'none') {
+        this._currentPrompt = 'normal';
+        this._writePrompt('normal');
+      }
+    }, 750);
   }
 
   /**
@@ -398,6 +420,11 @@ export class ReplTerminal implements vscode.Pseudoterminal {
   private _dispose(): void {
     if (this._disposed) return;
     this._disposed = true;
+
+    if (this._initialPromptTimer) {
+      clearTimeout(this._initialPromptTimer);
+      this._initialPromptTimer = undefined;
+    }
 
     if (this._dataHandler) {
       this._connection.removeListener('data', this._dataHandler);
