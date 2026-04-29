@@ -5,9 +5,7 @@ on:
     tags: ['v*']
 
 env:
-  # espflash v4.x has a Linux compilation bug (nix signal feature, #1015)
-  # Pin to 3.3.0 until a v4 release with the fix ships
-  ESPFLASH_VERSION: '3.3.0'
+  ESPFLASH_VERSION: '4.4.0'
 
 jobs:
   ci:
@@ -63,42 +61,22 @@ jobs:
       - name: Build extension
         run: npm run compile -- --minify
 
-      # Build espflash from source on each platform
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust-target }}
-
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libudev-dev
-          if [ "${{ matrix.rust-target }}" = "aarch64-unknown-linux-gnu" ]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu
-          fi
-
-      - name: Build espflash
+      # Download official espflash binary for this platform.
+      # We previously built from source on every runner, but v4.x publishes
+      # prebuilt release assets for all four of our targets — much faster
+      # CI and no Rust toolchain / libudev cross-compile setup needed.
+      - name: Download espflash
         shell: bash
         run: |
-          if [ "${{ matrix.rust-target }}" = "aarch64-unknown-linux-gnu" ]; then
-            # Skip libudev for arm64 cross-build - apt arm64 packages unavailable on x86 runners.
-            # espflash uses libudev only for auto port-detection; we always pass --port explicitly.
-            cargo install espflash --version ${{ env.ESPFLASH_VERSION }} --no-default-features --features cli --target ${{ matrix.rust-target }} --root ./espflash-out
-          else
-            cargo install espflash --version ${{ env.ESPFLASH_VERSION }} --target ${{ matrix.rust-target }} --root ./espflash-out
-          fi
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-
-      - name: Bundle espflash binary
-        shell: bash
-        run: |
+          set -euo pipefail
+          ASSET="espflash-${{ matrix.rust-target }}.zip"
+          URL="https://github.com/esp-rs/espflash/releases/download/v${ESPFLASH_VERSION}/${ASSET}"
           mkdir -p bin/${{ matrix.target }}
+          curl -fsSL "$URL" -o espflash.zip
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            cp ./espflash-out/bin/espflash.exe bin/${{ matrix.target }}/espflash.exe
+            unzip -o espflash.zip -d bin/${{ matrix.target }}
           else
-            cp ./espflash-out/bin/espflash bin/${{ matrix.target }}/espflash
+            unzip -o espflash.zip -d bin/${{ matrix.target }}
             chmod +x bin/${{ matrix.target }}/espflash
           fi
 
